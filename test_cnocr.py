@@ -9,15 +9,18 @@
 '''
 | sample id | n_boxes | ppocr_v3 (onnx) | ppocr_v2 (onnx) | shflnet_v2 (pytorch) | mbnet_v3 (pytorch) |
 | :-: | :-: | :-: | :-: | :-: | :-: |
-| 11.jpg       | 16/18/23 | 277.27ms | 250.89ms | 532.78ms | 478.98ms |
-| 12.jpg       |     4    | 131.87ms | 122.05ms | 391.74ms | 327.83ms |
-| 00207393.jpg |     4    | 144.38ms | 129.24ms | 393.02ms | 337.06ms |
+| 11.jpg       | 16/18/23 | 257.82ms | 235.94ms | 532.78ms | 478.98ms |
+| 12.jpg       |     4    | 126.57ms | 119.69ms | 391.74ms | 327.83ms |
+| 00207393.jpg |     4    | 144.20ms | 128.39ms | 393.02ms | 337.06ms |
 '''
 
 from time import time
 from pathlib import Path
 from PIL import Image
 
+from PIL import Image
+import numpy as np
+from tqdm import tqdm
 from cnocr import CnOcr
 
 BASE_PATH = Path(__file__).parent
@@ -36,10 +39,18 @@ ocr = CnOcr(
   rec_model_backend='onnx',                       # 固定用 onnx 版本
 )
 
-ts_start = time()
-result = ocr.ocr(Image.open(img_path).convert('RGB'))
-ts_end = time()
-print(f'>> time cost: {(ts_end - ts_start) * 1000:.2f}ms')
+# warmup
+im = np.array(Image.open(img_path))
+result = ocr.ocr(im)
+ts_list = []
+# average 10 tests
+for _ in tqdm(range(10)):
+  ts_start = time()
+  result = ocr.ocr(im)
+  ts_end = time()
+  ts_list.append(ts_end - ts_start)
+ts = sum(ts_list) / len(ts_list)
+print(f'>> time cost: {(ts) * 1000:.2f}ms')
 
 print('>> n_boxes:', len(result))
 for idx in range(len(result)):

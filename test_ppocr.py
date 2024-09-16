@@ -8,16 +8,18 @@
 '''
 | sample id | n_boxes | PP-OCRv4 | PP-OCRv3 | PP-OCRv2 |
 | :-: | :-: | :-: | :-: | :-: |
-| 1.jpg        |  2 |  547.33ms | 507.17ms | 484.80ms |
-| 11.jpg       | 16 | 1085.22ms | 753.76ms | 569.25ms |
-| 12.jpg       |  4 |  564.77ms | 530.41ms | 443.50ms |
-| 00207393.jpg |  4 |  511.48ms | 473.04ms | 421.85ms |
+| 1.jpg        |  2 | 129.70ms |  87.08ms |  78.88ms |
+| 11.jpg       | 16 | 519.30ms | 212.81ms | 164.08ms |
+| 12.jpg       |  4 | 178.11ms | 102.99ms |  87.35ms |
+| 00207393.jpg |  4 | 160.64ms |  74.43ms |  56.36ms |
 '''
 
 from time import time
 from pathlib import Path
 
 from PIL import Image
+import numpy as np
+from tqdm import tqdm
 from paddleocr.paddleocr import PaddleOCR
 from paddleocr.tools.infer.utility import draw_ocr
 from paddleocr.tools.infer.predict_det import TextDetector
@@ -50,10 +52,18 @@ ocr = PaddleOCR(
 #cla: TextClassifier = ocr.text_classifier
 #rec: TextRecognizer = ocr.text_recognizer
 
-ts_start = time()
-result = ocr.ocr(str(img_path), cls=True)
-ts_end = time()
-print(f'>> time cost: {(ts_end - ts_start) * 1000:.2f}ms')
+# warmup
+im = np.array(Image.open(img_path))
+result = ocr.ocr(im)
+ts_list = []
+# average 10 tests
+for _ in tqdm(range(10)):
+  ts_start = time()
+  result = ocr.ocr(im)
+  ts_end = time()
+  ts_list.append(ts_end - ts_start)
+ts = sum(ts_list) / len(ts_list)
+print(f'>> time cost: {(ts) * 1000:.2f}ms')
 
 for idx in range(len(result)):
   res = result[idx]
