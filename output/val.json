@@ -1,0 +1,10 @@
+{
+    "Result": [
+        {
+            "Precision": 0,
+            "Recall": 0,
+            "F1-Score": 0,
+            "i_time": 0
+        }
+    ]
+}
