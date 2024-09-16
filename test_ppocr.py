@@ -54,12 +54,12 @@ ocr = PaddleOCR(
 
 # warmup
 im = np.array(Image.open(img_path))
-result = ocr.ocr(im)
+result = ocr.ocr(im, cls=False)
 ts_list = []
 # average 10 tests
 for _ in tqdm(range(10)):
   ts_start = time()
-  result = ocr.ocr(im)
+  result = ocr.ocr(im, cls=False)
   ts_end = time()
   ts_list.append(ts_end - ts_start)
 ts = sum(ts_list) / len(ts_list)

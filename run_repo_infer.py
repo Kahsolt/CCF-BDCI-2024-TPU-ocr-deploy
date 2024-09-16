@@ -1,134 +1,163 @@
-import os
-import sys
-import json
-import glob
+#!/usr/bin/env python3
+# Author: Armit
+# Create Time: 2024/09/17 
 
+# 基于开源repo推理图片文件夹
 
+'''
+| repo | avg(time) |
+| :-: | :-: |
+| ppocr (v4)      |  739.95ms |
+| ppocr (v3)      |  594.67ms |
+| ppocr (v2)      |  501.94ms |
+| cnocr (v3)      |  196.97ms |
+| cnocr (v2)      |  174.62ms |
+| rapidocr        | 1433.46ms |
+| chineseocr_lite |  209.94ms |
+'''
 
-import numpy as np
-
-
-from PIL import Image
 from time import time
 from pathlib import Path
+from argparse import ArgumentParser
+
+import numpy as np
+from PIL import Image
 from tqdm import tqdm
 
-
-# paddleocr
-from paddleocr.paddleocr import PaddleOCR
-from paddleocr.tools.infer.utility import draw_ocr
-from paddleocr.tools.infer.predict_det import TextDetector
-from paddleocr.tools.infer.predict_cls import TextClassifier
-from paddleocr.tools.infer.predict_rec import TextRecognizer
+from xutils import *
 
 
-# cnocr
-#from cnocr import CnOcr
+def run_ppocr(args) -> InferResults:
+  from paddleocr.paddleocr import PaddleOCR
 
-# rapidocr
-#from rapidocr_onnxruntime import RapidOCR
+  ocr = PaddleOCR(
+    ocr_version='PP-OCRv4',
+    lang='ch',
+    use_angle_cls=False,
+    precision='fp32',
+    show_log=False,
+  )
+  ocr.ocr(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8), cls=False)
 
-# chineseocr_lite
-#import onnxruntime as ort
-#ort.set_default_logger_severity(3)
-#from model import OcrHandle
-#np.int = np.int32
+  results: InferResults = []
+  fps = sorted(Path(args.img_folder).iterdir())
+  for fp in tqdm(fps):
+    im = np.array(Image.open(fp).convert('RGB'))
+    ts_start = time()
+    result = ocr.ocr(im, cls=False)
+    ts_end = time()
+
+    # TODO: analyze result
+
+    results.append({
+      'Precision': 0.0,
+      'Recall': 0.0,
+      'F1-Score': 0.0,
+      'i_time': (ts_end - ts_start) * 1000,
+    })
+
+  return results
 
 
+def run_cnocr(args) -> InferResults:
+  from cnocr import CnOcr
 
-parameters = {
-    "Precision": 0,
-    "Recall": 0,
-    "F1-Score": 0,
-    "i_time": 0
-}
+  ocr = CnOcr(
+    det_model_name='ch_PP-OCRv3_det',
+    rec_model_name='scene-densenet_lite_136-gru',
+    det_model_backend='onnx',
+    rec_model_backend='onnx',
+  )
+  ocr.ocr(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8))
 
-
-
-def model_ppocr(img_path):
-    ocr     =   PaddleOCR( ocr_version='PP-OCRv4', lang='ch', use_angle_cls=False, use_onnx=False, use_tensorrt=False, precision='fp32')
-    im = np.array(Image.open(img_path))
+  results: InferResults = []
+  fps = sorted(Path(args.img_folder).iterdir())
+  for fp in tqdm(fps):
+    im = np.array(Image.open(fp).convert('RGB'))
+    ts_start = time()
     result = ocr.ocr(im)
-    ts_list =   []
-    #还需要跑10遍吗
-    for _ in tqdm(range(10)):
-        ts_start    =   time()
-        result      =   ocr.ocr(im)
-        ts_end      =   time()
-        ts_list.append(ts_end - ts_start)
-    
-    ts = sum(ts_list) / len(ts_list)
-    print(f'>> time cost: {(ts) * 1000:.2f}ms')
+    ts_end = time()
 
-    #for idx in range(len(result)):
-    #    res = result[idx]
-    #    for line in res:
-    #        print(line)
-    
-    #这里没想清楚怎么改，先就加上了时间，然后也只是单张图片的时间
-    #parameters["Precision"]    = 0
-    #parameters["Recall"]       = 0
-    #parameters["F1-Score"]     = 0
-    parameters["i_time"]        = (ts) * 1000
-    #return parameters
+    # TODO: analyze result
+
+    results.append({
+      'Precision': 0.0,
+      'Recall': 0.0,
+      'F1-Score': 0.0,
+      'i_time': (ts_end - ts_start) * 1000,
+    })
+
+  return results
 
 
+def run_rapidocr(args) -> InferResults:
+  from rapidocr_onnxruntime import RapidOCR
 
-def model_chineseocr_lite(img_path):
-    #类似于model_ppocr
-    return parameters
+  ocr = RapidOCR()
+  ocr(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8))
 
-def model_cnocr(img_path):
-    #类似于model_ppocr
-    return parameters
+  results: InferResults = []
+  fps = sorted(Path(args.img_folder).iterdir())
+  for fp in tqdm(fps):
+    im = np.array(Image.open(fp).convert('RGB'))
+    ts_start = time()
+    result, elapse = ocr(im)
+    ts_end = time()
 
-def model_rapidocr(img_path):
-    #类似于model_ppocr
-    return parameters
+    # TODO: analyze result
 
+    results.append({
+      'Precision': 0.0,
+      'Recall': 0.0,
+      'F1-Score': 0.0,
+      'i_time': (ts_end - ts_start) * 1000,
+    })
 
-def get_arguments():
-
-    if len(sys.argv) != 3:
-        print("Usage: python run_repo_infer.py <image_folder_path> <model_name>")
-        sys.exit(1)
-    
-    image_folder    =   sys.argv[1]
-    model_name      =   sys.argv[2]
-    
-    return image_folder, model_name
-
-
-
-def load_images(folder_path):
-    image_pattern   =   os.path.join(folder_path, '*.jpg')  
-    image_files     =   glob.glob(image_pattern)
-    return image_files
+  return results
 
 
-def call_model(model_name, img_path):
-    function = globals().get(model_name)
-    if callable(function):
-        return function(img_path)
-    else:
-        return f"Function '{model_name}' not found."
+def run_chineseocr_lite(args) -> InferResults:
+  REPO_LIB_PATH = REPO_PATH / 'chineseocr_lite'
+  assert REPO_LIB_PATH.is_dir(), '>> You should first git clone https://github.com/DayBreak-u/chineseocr_lite'
+
+  import sys ; sys.path.insert(0, str(REPO_LIB_PATH))
+  from model import OcrHandle
+  import onnxruntime as ort
+  ort.set_default_logger_severity(3)
+  np.int = np.int32
+
+  short_size = 640
+  ocr = OcrHandle()
+  ocr.text_predict(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8), short_size)
+
+  results: InferResults = []
+  fps = sorted(Path(args.img_folder).iterdir())
+  for fp in tqdm(fps):
+    im = np.array(Image.open(fp).convert('RGB'))
+    ts_start = time()
+    result = ocr.text_predict(im, short_size)
+    ts_end = time()
+
+    # TODO: analyze result
+
+    results.append({
+      'Precision': 0.0,
+      'Recall': 0.0,
+      'F1-Score': 0.0,
+      'i_time': (ts_end - ts_start) * 1000,
+    })
+
+  return results
 
 
-def main():
+if __name__ == '__main__':
+  parser = ArgumentParser()
+  parser.add_argument('-K', '--backend',    default='ppocr', choices=['ppocr', 'cnocr', 'rapidocr', 'chineseocr_lite'])
+  parser.add_argument('-I', '--img_folder', default=DEFAULT_INPUT_FOLDER, type=Path)
+  parser.add_argument('-O', '--save_file',  default=DEFAULT_SAVE_FILE,    type=Path)
+  args = parser.parse_args()
 
+  assert Path(args.img_folder).is_dir()
 
-    image_folder, model_name    =   get_arguments()
-    images                      =   load_images(image_folder)
-
-    for image in images:
-        call_model(model_name, image)
-        
-
-    data            =   { "Result": [parameters] }
-    json_file_path  =   "./output/val.json"
-    with open(json_file_path, 'w') as json_file:
-        json.dump(data, json_file, indent=4)
-
-
-if __name__ == "__main__":
-    main()
+  results = globals()[f'run_{args.backend}'](args)
+  save_infer_results(results, args.save_file)
