@@ -24,6 +24,8 @@ popd
 # (optional) packages, run PPOCR
 pip install paddlepaddle
 pip install paddleocr onnxruntime
+# (optional) packages, run CnOCR (NOT recommended, it depeneds on PyTorch and not support verticle texts!!)
+pip install cnocr[ort-cpu]
 ```
 
 
