@@ -16,6 +16,7 @@ Team Name: 识唔识得
 # venv
 conda create -y -n tpu python==3.11
 conda activate tpu
+pip install onnxruntime
 # test data
 mkdir data & pushd data
 wget -nc https://paddleocr.bj.bcebos.com/dygraph_v2.1/ppocr_img.zip
@@ -23,11 +24,13 @@ unzip ppocr_img.zip
 popd
 # (optional) packages, run PPOCR
 pip install paddlepaddle
-pip install paddleocr onnxruntime
+pip install paddleocr
 # (optional) packages, run RapidOCR (NOT recommended, even twice slower than PPOCR!)
 pip install rapidocr_onnxruntime
 # (optional) packages, run CnOCR (NOT recommended, it depeneds on PyTorch and not support verticle texts!!)
 pip install cnocr[ort-cpu]
+# (optional) repository, run ChineseOCR-Lite
+# => manually run repo/init_repos.cmd
 ```
 
 

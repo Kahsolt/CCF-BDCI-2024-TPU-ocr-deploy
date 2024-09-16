@@ -2,7 +2,7 @@
 
 PUSHD %~dp0
 
-REM git clone 
+git clone https://github.com/DayBreak-u/chineseocr_lite
 
 POPD
 

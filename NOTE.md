@@ -2,6 +2,7 @@
 
 索引
 
+- OCR调研报告: https://blog.csdn.net/weixin_41021342/article/details/127203654
 - 十二款开源OCR开箱测评: http://www.ceietn.com/a/zhengcefagui/guojiaji/930.html
 - 6款开源中文OCR使用介绍: https://blog.csdn.net/bugang4663/article/details/131720149
 - PaddleOCR 3.5M模型: https://blog.csdn.net/moxibingdao/article/details/108765380
@@ -13,9 +14,9 @@
   - https://arxiv.org/abs/2206.03001
 - https://github.com/breezedeus/CnOCR
 - https://github.com/RapidAI/RapidOCR
-- https://github.com/chineseocr/chineseocr
-- https://github.com/chineseocr/darknet-ocr
-- https://github.com/ouyanghuiyu/chineseocr_lite
+- https://github.com/chineseocr/chineseocr (停更)
+- https://github.com/chineseocr/darknet-ocr (停更)
+- https://github.com/ouyanghuiyu/chineseocr_lite (停更)
   - onnx port: https://github.com/benjaminwan/OcrLiteOnnx
   - ncnn port: https://github.com/benjaminwan/OcrLiteNcnn
 - https://github.com/myhub/tr
