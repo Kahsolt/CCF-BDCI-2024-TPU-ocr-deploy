@@ -8,10 +8,30 @@ Contest page: https://www.datafountain.cn/competitions/1044
 Team Name: 识唔识得  
 
 
+### setup dev env
+
+我们的首要尝试是迁移部署 PP-OCRv4 系列模型
+
+```shell
+# venv
+conda create -y -n tpu python==3.11
+conda activate tpu
+# test data
+mkdir data & pushd data
+wget -nc https://paddleocr.bj.bcebos.com/dygraph_v2.1/ppocr_img.zip
+unzip ppocr_img.zip
+popd
+# (optional) packages, run PPOCR
+pip install paddlepaddle
+pip install paddleocr onnxruntime
+```
+
+
 #### refenrence
 
 - ICDAR2019-LVST dataset: https://rrc.cvc.uab.es/?ch=16&com=introduction
   - download: https://aistudio.baidu.com/datasetdetail/177210
+- PaddleOCR test: https://paddleocr.bj.bcebos.com/dygraph_v2.1/ppocr_img.zip
 - tpu-mlir 资料
   - 算能云开发平台使用说明 https://tpumlir.org/index.html
   - PP-OCR 模型部署参考示例
