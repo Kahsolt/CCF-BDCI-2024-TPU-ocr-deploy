@@ -4,14 +4,15 @@
 
 import json
 from pathlib import Path
-from typing import *
+from typing import List, Dict
 
-BASE_PATH = Path(__name__).parent
+BASE_PATH = Path(__file__).parent
 DATA_PATH = BASE_PATH / 'data'
 REPO_PATH = BASE_PATH / 'repo'
 IMG_PATH = BASE_PATH / 'img'
 OUT_PATH = BASE_PATH / 'output'
-DEFAULT_INPUT_FOLDER = DATA_PATH / 'ppocr_img' / 'imgs'
+PP_DATA_PATH = DATA_PATH/ 'ppocr_img'
+DEFAULT_INPUT_FOLDER = PP_DATA_PATH / 'imgs'
 DEFAULT_SAVE_FILE = OUT_PATH / 'val.json'
 IMAGE_FILE_SUFFIX = ['.jpg', '.jpeg', '.png']
 INFER_RESULT_FIELDS = [
