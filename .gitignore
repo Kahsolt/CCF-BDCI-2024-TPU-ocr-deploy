@@ -16,3 +16,6 @@ output/
 # logs
 log/
 *.log
+
+# lprof
+*.lprof
