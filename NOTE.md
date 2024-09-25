@@ -37,8 +37,7 @@ wget -nc https://paddleocr.bj.bcebos.com/dygraph_v2.1/ppocr_img.zip
 unzip ppocr_img.zip
 popd
 # (optional) packages, run PPOCR
-pip install paddlepaddle
-pip install paddleocr
+pip install paddlepaddle paddleocr
 # (optional) packages, run RapidOCR (NOT recommended, even twice slower than PPOCR!)
 pip install rapidocr_onnxruntime
 # (optional) packages, run CnOCR (NOT recommended, it depeneds on PyTorch and not support verticle texts!!)

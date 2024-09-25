@@ -16,8 +16,9 @@ DATA_PATH = BASE_PATH / 'data'
 REPO_PATH = BASE_PATH / 'repo'
 IMG_PATH = BASE_PATH / 'img'
 OUT_PATH = BASE_PATH / 'output'
+DEMO_PATH = BASE_PATH / 'ppocr'
 PP_DATA_PATH = DATA_PATH/ 'ppocr_img'
-DEFAULT_INPUT_FOLDER = PP_DATA_PATH / 'imgs'
+DEFAULT_INPUT_FOLDER = DEMO_PATH / 'datasets' / 'train_full_images_0'
 DEFAULT_SAVE_FILE = OUT_PATH / 'val.json'
 INFER_RESULT_FIELDS = [
   'Precision',
@@ -101,7 +102,8 @@ def save_infer_results(results:InferResults, fp:Path=DEFAULT_SAVE_FILE):
   for it in results:
     for fld in INFER_RESULT_FIELDS:
       assert isinstance(it.get(fld), float), f'{fld} should be float type but got {type(it.get(fld))}'
-  print('>> mean(time):', mean([it['i_time'] for it in results]))
+  print('>> mean(f1):',   mean([it['F1-Score'] for it in results]))
+  print('>> mean(time):', mean([it['i_time']   for it in results]))
 
   with open(fp, 'w', encoding='utf-8') as fh:
     json.dump({"Result": results}, fh, indent=2, ensure_ascii=False)
@@ -128,7 +130,7 @@ def calc_f1(preds:Annots, truths:Annots, iou_thresh:float=0.5, sim_thresh:float=
   truth_bbox_cnt = 0
   TP = 0
 
-  for id, truth_bbox_list in tqdm(truths.items()):
+  for id, truth_bbox_list in (tqdm if len(preds) > 1 else (lambda _: _))(truths.items()):
     pred_bbox_list = preds.get(id, [])
     pred_bbox_cnt  += len(pred_bbox_list)
     truth_bbox_cnt += len(truth_bbox_list)
