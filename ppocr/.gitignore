@@ -1,0 +1,6 @@
+# data
+datasets/
+
+# downloads
+downloads/*
+!downloads/*.cmd

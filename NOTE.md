@@ -1,6 +1,6 @@
 ### 模型选型
 
-索引
+调研索引
 
 - OCR调研报告: https://blog.csdn.net/weixin_41021342/article/details/127203654
 - 十二款开源OCR开箱测评: http://www.ceietn.com/a/zhengcefagui/guojiaji/930.html
@@ -8,7 +8,7 @@
 - PaddleOCR 3.5M模型: https://blog.csdn.net/moxibingdao/article/details/108765380
 - 开源OCR模型对比: https://www.cnblogs.com/shiwanghualuo/p/18139459
 
-项目
+开源项目
 
 - https://github.com/PaddlePaddle/PaddleOCR ⭐
   - https://arxiv.org/abs/2206.03001
@@ -23,6 +23,29 @@
   - webui: https://github.com/alisen39/TrWebOCR
 - https://github.com/jaidedai/easyocr
 - https://github.com/clovaai/deep-text-recognition-benchmark
+
+开源项目实测
+
+```shell
+# venv
+conda create -y -n tpu python==3.10
+conda activate tpu
+pip install onnxruntime
+# test data
+mkdir data & pushd data
+wget -nc https://paddleocr.bj.bcebos.com/dygraph_v2.1/ppocr_img.zip
+unzip ppocr_img.zip
+popd
+# (optional) packages, run PPOCR
+pip install paddlepaddle
+pip install paddleocr
+# (optional) packages, run RapidOCR (NOT recommended, even twice slower than PPOCR!)
+pip install rapidocr_onnxruntime
+# (optional) packages, run CnOCR (NOT recommended, it depeneds on PyTorch and not support verticle texts!!)
+pip install cnocr[ort-cpu]
+# (optional) repository, run ChineseOCR-Lite
+# => manually run repo/init_repos.cmd
+```
 
 
 ### 前车之鉴
