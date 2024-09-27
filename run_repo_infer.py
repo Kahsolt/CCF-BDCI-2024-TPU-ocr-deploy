@@ -5,15 +5,15 @@
 # 基于开源repo推理图片文件夹，保存结果并估算得分
 
 '''
-| method | mean(f1) | mean(runtime) | estimated_score | submit_score |
+| method | mean(f1) | mean(runtime) | estimated_score | submit_score (f1/prec/recall) |
 | :-: | :-: | :-: | :-: | :-: |
-| ppocr (v4)  | 0.6931 |  620.44ms |  64.99/100.00 |             |
-| ppocr (v3)  | 0.6627 |  472.93ms |  76.31/100.00 |     全      |
-| ppocr (v2)  | 0.6402 |  157.85ms | 100.00/100.00 |     部      |
-| cnocr (v3)  | 0.2423 |  136.68ms |  88.07/ 99.62 |     都      |
-| cnocr (v2)  | 0.2314 |  116.86ms |  89.32/ 99.19 |     是      |
-| chocr (960) | 0.4205 |  333.30ms |  78.49/100.00 | 89.94687500 |
-| chocr (640) | 0.4310 |  142.11ms |  95.16/100.00 |             |
+| ppocr (v4)  | 0.6931 |  620.44ms |  64.99/100.00 |  |
+| ppocr (v3)  | 0.6627 |  472.93ms |  76.31/100.00 |  |
+| ppocr (v2)  | 0.6402 |  157.85ms | 100.00/100.00 | 0.62266139657/0.82356016381/0.50055605571 (100.00) |
+| cnocr (v3)  | 0.2423 |  136.68ms |  88.07/ 99.62 |  |
+| cnocr (v2)  | 0.2314 |  116.86ms |  89.32/ 99.19 |  |
+| chocr (960) | 0.4205 |  333.30ms |  78.49/100.00 |  |
+| chocr (640) | 0.4310 |  142.11ms |  95.16/100.00 | 0.40900939238/0.48002283105/0.35629931685 (100.00) |
 '''
 
 from time import time
@@ -27,7 +27,7 @@ from tqdm import tqdm
 from xutils import *
 
 
-def run_ppocr(args, annots:Annots) -> InferResults:
+def run_ppocr(args) -> InferResults:
   from paddleocr.paddleocr import PaddleOCR
 
   ocr = PaddleOCR(
@@ -39,30 +39,22 @@ def run_ppocr(args, annots:Annots) -> InferResults:
   )
   ocr.ocr(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8), cls=False)
 
-  results: InferResults = []
+  results: InferResults = {}
   fps = sorted(Path(args.img_folder).iterdir())
   for fp in tqdm(fps):
     im = np.array(Image.open(fp).convert('RGB'))
     ts_start = time()
-    result = ocr.ocr(im, cls=False)[0]
+    result = ocr.ocr(im, cls=False)[0] or []
     ts_end = time()
 
-    id = fp.stem
-    annot_pred = {id: [BBox(e[1][0], e[0]) for e in result] if result else []}
-    annot_true = {id: annots[id]}
-    f_score, precision, recall = calc_f1(annot_pred, annot_true)
-
-    results.append({
-      'Precision': precision,
-      'Recall': recall,
-      'F1-Score': f_score,
-      'i_time': (ts_end - ts_start) * 1000,
-    })
+    bboxes = [BBox(e[1][0], e[0]) for e in result]
+    runtime = (ts_end - ts_start) * 1000
+    results[fp.stem] = (bboxes, runtime)
 
   return results
 
 
-def run_cnocr(args, annots:Annots) -> InferResults:
+def run_cnocr(args) -> InferResults:
   from cnocr import CnOcr
 
   ocr = CnOcr(
@@ -73,43 +65,28 @@ def run_cnocr(args, annots:Annots) -> InferResults:
   )
   ocr.ocr(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8))
 
-  results: InferResults = []
+  results: Annots = {}
   fps = sorted(Path(args.img_folder).iterdir())
   for fp in tqdm(fps):
     im = np.array(Image.open(fp).convert('RGB'))
     ts_start = time()
-    result = ocr.ocr(im)
+    result = ocr.ocr(im) or []
     ts_end = time()
 
-    id = fp.stem
-    annot_pred = {id: [BBox(e['text'], e['position'].tolist()) for e in result] if result else []}
-    annot_true = {id: annots[id]}
-    f_score, precision, recall = calc_f1(annot_pred, annot_true)
-
-    results.append({
-      'Precision': precision,
-      'Recall': recall,
-      'F1-Score': f_score,
-      'i_time': (ts_end - ts_start) * 1000,
-    })
-
-    results.append({
-      'Precision': 0.0,
-      'Recall': 0.0,
-      'F1-Score': 0.0,
-      'i_time': (ts_end - ts_start) * 1000,
-    })
+    bboxes = [BBox(e['text'], e['position'].tolist()) for e in result]
+    runtime = (ts_end - ts_start) * 1000
+    results[fp.stem] = (bboxes, runtime)
 
   return results
 
 
-def run_rapidocr(args, annots:Annots) -> InferResults:
+def run_rapidocr(args) -> InferResults:
   from rapidocr_onnxruntime import RapidOCR
 
   ocr = RapidOCR()
   ocr(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8))
 
-  results: InferResults = []
+  results: Annots = {}
   fps = sorted(Path(args.img_folder).iterdir())
   for fp in tqdm(fps):
     im = np.array(Image.open(fp).convert('RGB'))
@@ -119,17 +96,10 @@ def run_rapidocr(args, annots:Annots) -> InferResults:
 
     # TODO: analyze result
 
-    results.append({
-      'Precision': 0.0,
-      'Recall': 0.0,
-      'F1-Score': 0.0,
-      'i_time': (ts_end - ts_start) * 1000,
-    })
-
   return results
 
 
-def run_chineseocr_lite(args, annots:Annots) -> InferResults:
+def run_chineseocr_lite(args) -> InferResults:
   REPO_LIB_PATH = REPO_PATH / 'chineseocr_lite'
   assert REPO_LIB_PATH.is_dir(), '>> You should first git clone https://github.com/DayBreak-u/chineseocr_lite'
 
@@ -144,25 +114,17 @@ def run_chineseocr_lite(args, annots:Annots) -> InferResults:
   ocr = OcrHandle()
   ocr.text_predict(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8), short_size)
 
-  results: InferResults = []
+  results: InferResults = {}
   fps = sorted(Path(args.img_folder).iterdir())
   for fp in tqdm(fps):
     im = np.array(Image.open(fp).convert('RGB'))
     ts_start = time()
-    result = ocr.text_predict(im, short_size)
+    result = ocr.text_predict(im, short_size) or []
     ts_end = time()
 
-    id = fp.stem
-    annot_pred = {id: [BBox(e[1], e[0].tolist()) for e in result] if result else []}
-    annot_true = {id: annots[id]}
-    f_score, precision, recall = calc_f1(annot_pred, annot_true)
-
-    results.append({
-      'Precision': precision,
-      'Recall': recall,
-      'F1-Score': f_score,
-      'i_time': (ts_end - ts_start) * 1000,
-    })
+    bboxes = [BBox(e[1], e[0].tolist()) for e in result]
+    runtime = (ts_end - ts_start) * 1000
+    results[fp.stem] = (bboxes, runtime)
 
   return results
 
@@ -180,12 +142,27 @@ if __name__ == '__main__':
 
   assert Path(args.img_folder).is_dir()
 
-  annots = load_annots()
-  results = globals()[f'run_{args.backend}'](args, annots)    # NOTE: This takes ~15min
+  infer_results: InferResults = globals()[f'run_{args.backend}'](args)    # NOTE: This takes ~15min
+  results = {k: v[0] for k, v in infer_results.items()}   # infer_annots => annots
   save_infer_results(results, args.save_file)
 
-  f1 = mean([e['F1-Score'] for e in results])
-  ts = mean([e['i_time']   for e in results])
+  # results => metrics
+  annots = load_annots()
+  metrics: InferMetrics = []
+  for id, annot in annots.items():
+    if id not in infer_results: continue
+    bboxes, runtime = infer_results[id]
+    f_score, precision, recall = calc_f1({id: bboxes}, {id: annot})
+    metrics.append({
+      'Precision': precision,
+      'Recall': recall,
+      'F1-Score': f_score,
+      'i_time': runtime,
+    })
+  save_infer_metrics(metrics, Path(args.save_file).with_suffix('.metrics.json'))
+
+  f1 = mean([e['F1-Score'] for e in metrics])
+  ts = mean([e['i_time']   for e in metrics])
   print('mean(f1)',      f1)
   print('mean(runtime)', ts)
   print('Estimated score:',          min(100, 90 + 40 * f1 - 0.085 * ts))

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from difflib import SequenceMatcher
 from dataclasses import dataclass
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 
 from tqdm import tqdm
 from shapely.geometry import Polygon
@@ -20,7 +20,7 @@ DEMO_PATH = BASE_PATH / 'ppocr'
 PP_DATA_PATH = DATA_PATH/ 'ppocr_img'
 DEFAULT_INPUT_FOLDER = DEMO_PATH / 'datasets' / 'train_full_images_0'
 DEFAULT_SAVE_FILE = OUT_PATH / 'val.json'
-INFER_RESULT_FIELDS = [
+INFER_METRIC_FIELDS = [
   'Precision',
   'Recall',
   'F1-Score',
@@ -31,8 +31,7 @@ PROCESSED_LABEL_FILE = LABEL_FILE.with_suffix('.jsonl')
 
 Point = Tuple[int, int]
 Points = List[Point]
-InferResult = Dict[str, float]
-InferResults = List[InferResult]
+InferMetrics = List[Dict[str, float]]   # f1-score & runtime
 
 mean = lambda x: sum(x) / len(x) if len(x) else 0.0
 safe_div = lambda x, y: x / y if y > 0 else 0.0
@@ -46,6 +45,7 @@ class BBox:
   bbox: List[Tuple[int]]
 
 Annots = Dict[str, List[BBox]]
+InferResults = Dict[str, Tuple[List[BBox], float]]    # (bboxes, runtime)
 
 def preprocess_annots(fp:Path=LABEL_FILE):
   assert fp.exists(), '>> You should first download the file "train_full_labels.json"'
@@ -97,17 +97,30 @@ def load_annots(fp:Path=PROCESSED_LABEL_FILE) -> Annots:
 
 ''' Results '''
 
-def save_infer_results(results:InferResults, fp:Path=DEFAULT_SAVE_FILE):
-  assert isinstance(results, list) and len(results), 'data should be a non-empty list'
-  for it in results:
-    for fld in INFER_RESULT_FIELDS:
+def save_infer_results(results:Annots, fp:Path=DEFAULT_SAVE_FILE):
+  assert isinstance(results, dict) and len(results), 'data should be a non-empty list'
+  data = {
+    k: [{
+      'transcription': e.text,
+      'points': e.bbox,
+    } for e in v]
+    for k, v in results.items()
+  }
+  with open(fp, 'w', encoding='utf-8') as fh:
+    json.dump(data, fh, indent=2, ensure_ascii=False)
+  print(f'>> [save_infer_results] {fp}')
+
+def save_infer_metrics(metrics:InferMetrics, fp:Path=DEFAULT_SAVE_FILE.with_suffix('.metrics.json')):
+  assert isinstance(metrics, list) and len(metrics), 'data should be a non-empty list'
+  for it in metrics:
+    for fld in INFER_METRIC_FIELDS:
       assert isinstance(it.get(fld), float), f'{fld} should be float type but got {type(it.get(fld))}'
-  print('>> mean(f1):',   mean([it['F1-Score'] for it in results]))
-  print('>> mean(time):', mean([it['i_time']   for it in results]))
+  print('>> mean(f1):',   mean([it['F1-Score'] for it in metrics]))
+  print('>> mean(time):', mean([it['i_time']   for it in metrics]))
 
   with open(fp, 'w', encoding='utf-8') as fh:
-    json.dump({"Result": results}, fh, indent=2, ensure_ascii=False)
-  print(f'>> [save_infer_data] {fp}')
+    json.dump({"Result": metrics}, fh, indent=2, ensure_ascii=False)
+  print(f'>> [save_infer_metrics] {fp}')
 
 
 ''' Metrics '''
