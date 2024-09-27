@@ -47,9 +47,10 @@ def run_ppocr(args) -> InferResults:
     result = ocr.ocr(im, cls=False)[0] or []
     ts_end = time()
 
-    bboxes = [BBox(e[1][0], e[0]) for e in result]
-    runtime = (ts_end - ts_start) * 1000
-    results[fp.stem] = (bboxes, runtime)
+    results[fp.stem] = InferResult(
+      [InferAnnot(e[1][0], e[0]) for e in result],
+      (ts_end - ts_start) * 1000,
+    )
 
   return results
 
@@ -65,7 +66,7 @@ def run_cnocr(args) -> InferResults:
   )
   ocr.ocr(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8))
 
-  results: Annots = {}
+  results: InferResults = {}
   fps = sorted(Path(args.img_folder).iterdir())
   for fp in tqdm(fps):
     im = np.array(Image.open(fp).convert('RGB'))
@@ -73,9 +74,10 @@ def run_cnocr(args) -> InferResults:
     result = ocr.ocr(im) or []
     ts_end = time()
 
-    bboxes = [BBox(e['text'], e['position'].tolist()) for e in result]
-    runtime = (ts_end - ts_start) * 1000
-    results[fp.stem] = (bboxes, runtime)
+    results[fp.stem] = InferResult(
+      [InferAnnot(e['text'], e['position'].tolist()) for e in result],
+      (ts_end - ts_start) * 1000,
+    )
 
   return results
 
@@ -86,7 +88,7 @@ def run_rapidocr(args) -> InferResults:
   ocr = RapidOCR()
   ocr(np.random.randint(low=0, high=255, size=(256, 256, 3), dtype=np.uint8))
 
-  results: Annots = {}
+  results: InferResults = {}
   fps = sorted(Path(args.img_folder).iterdir())
   for fp in tqdm(fps):
     im = np.array(Image.open(fp).convert('RGB'))
@@ -122,9 +124,10 @@ def run_chineseocr_lite(args) -> InferResults:
     result = ocr.text_predict(im, short_size) or []
     ts_end = time()
 
-    bboxes = [BBox(e[1], e[0].tolist()) for e in result]
-    runtime = (ts_end - ts_start) * 1000
-    results[fp.stem] = (bboxes, runtime)
+    results[fp.stem] = InferResult(
+      [InferAnnot(e[1], e[0].tolist()) for e in result],
+      (ts_end - ts_start) * 1000,
+    )
 
   return results
 
@@ -142,28 +145,7 @@ if __name__ == '__main__':
 
   assert Path(args.img_folder).is_dir()
 
-  infer_results: InferResults = globals()[f'run_{args.backend}'](args)    # NOTE: This takes ~15min
-  results = {k: v[0] for k, v in infer_results.items()}   # infer_annots => annots
+  results: InferResults = globals()[f'run_{args.backend}'](args)    # NOTE: This takes 15min~20min
   save_infer_results(results, args.save_file)
-
-  # results => metrics
-  annots = load_annots()
-  metrics: InferMetrics = []
-  for id, annot in annots.items():
-    if id not in infer_results: continue
-    bboxes, runtime = infer_results[id]
-    f_score, precision, recall = calc_f1({id: bboxes}, {id: annot})
-    metrics.append({
-      'Precision': precision,
-      'Recall': recall,
-      'F1-Score': f_score,
-      'i_time': runtime,
-    })
-  save_infer_metrics(metrics, Path(args.save_file).with_suffix('.metrics.json'))
-
-  f1 = mean([e['F1-Score'] for e in metrics])
-  ts = mean([e['i_time']   for e in metrics])
-  print('mean(f1)',      f1)
-  print('mean(runtime)', ts)
-  print('Estimated score:',          min(100, 90 + 40 * f1 - 0.085 * ts))
-  print('Estimated score (scaled):', min(100, 90 + 40 * f1 - 0.085 * ts / 160))
+  metrics = infer_results_to_metrics(results)
+  save_metrics(metrics, Path(args.save_file).with_suffix('.metrics.json'))

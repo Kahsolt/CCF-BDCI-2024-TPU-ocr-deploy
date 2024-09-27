@@ -9,15 +9,40 @@ Team Name: 识唔识得
 
 Todo List:
 
-- [ ] 跑通官方样例工程 [ppocr](/ppocr)
+- [*] 跑通各开源项目的推理 [run_repo_infer.cmd](./run_repo_infer.cmd)
+- [ ] 跑通官方样例工程 [ppocr](/ppocr) (这个需要在板子上跑😈)
 - [ ] 部署 & 性能测试官方样例工程
+- [ ] 板子的基准性能测试
 - [ ] 尝试迁移其他开源模型
   - [ ] ppocr v4
   - [ ] ppocr v3
-  - [ ] ppocr v2
-  - [ ] chineseocr_lite
-  - [ ] cnocr v3
-  - [ ] cnocr v2
+  - [ ] ppocr v2 (good!)
+  - [ ] chineseocr_lite (good!)
+
+
+### Quickstart
+
+⚪ install
+
+```shell
+# venv
+conda create -y -n tpu python==3.10
+conda activate tpu
+pip install onnxruntime
+
+# data
+mkdir data & pushd data
+wget -nc https://paddleocr.bj.bcebos.com/dygraph_v2.1/ppocr_img.zip
+unzip ppocr_img.zip
+# => manually download & unzip train_full_labels.json (183.86M) from https://aistudio.baidu.com/datasetdetail/177210
+# => manually follow ppocr\README.md 数据准备 section
+popd
+```
+
+⚪ run
+
+- 跑开源仓库: 参考 [NOTE.md](./NOTE.md) 中的 **开源项目实测**
+- 跑比赛样例工程: 参考 [ppocr/README.md](./ppocr/README.md)
 
 
 #### refenrence

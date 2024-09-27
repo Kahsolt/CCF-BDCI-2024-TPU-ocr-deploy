@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from difflib import SequenceMatcher
 from dataclasses import dataclass
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Union
 
 from tqdm import tqdm
 from shapely.geometry import Polygon
@@ -20,18 +20,8 @@ DEMO_PATH = BASE_PATH / 'ppocr'
 PP_DATA_PATH = DATA_PATH/ 'ppocr_img'
 DEFAULT_INPUT_FOLDER = DEMO_PATH / 'datasets' / 'train_full_images_0'
 DEFAULT_SAVE_FILE = OUT_PATH / 'val.json'
-INFER_METRIC_FIELDS = [
-  'Precision',
-  'Recall',
-  'F1-Score',
-  'i_time',
-]
 LABEL_FILE = DATA_PATH / 'train_full_labels.json'
 PROCESSED_LABEL_FILE = LABEL_FILE.with_suffix('.jsonl')
-
-Point = Tuple[int, int]
-Points = List[Point]
-InferMetrics = List[Dict[str, float]]   # f1-score & runtime
 
 mean = lambda x: sum(x) / len(x) if len(x) else 0.0
 safe_div = lambda x, y: x / y if y > 0 else 0.0
@@ -39,15 +29,25 @@ safe_div = lambda x, y: x / y if y > 0 else 0.0
 
 ''' Annots '''
 
+# ↓↓↓ 存储时结构
+BBox = List[Tuple[int, int]]
+Annot = Dict[str, Union[str, BBox]]     # keys: transcription, points
+Annots = Dict[str, List[Annot]]         # keys: sample_id
+Metrics = Dict[str, Dict[str, float]]   # keys: sample_id; subkeys: Precision, Recall, F1-Score, Runtime
+
+# ↓↓↓ 运行时结构
 @dataclass
-class BBox:
+class InferAnnot:
   text: str
-  bbox: List[Tuple[int]]
+  bbox: BBox
+@dataclass
+class InferResult:
+  annots: List[InferAnnot]
+  runtime: float
+InferResults = Dict[str, InferResult]
 
-Annots = Dict[str, List[BBox]]
-InferResults = Dict[str, Tuple[List[BBox], float]]    # (bboxes, runtime)
-
-def preprocess_annots(fp:Path=LABEL_FILE):
+def preprocess_annots(fp:Path=None):
+  fp = fp or LABEL_FILE
   assert fp.exists(), '>> You should first download the file "train_full_labels.json"'
 
   with open(fp, 'r', encoding='utf-8') as fh:
@@ -58,22 +58,22 @@ def preprocess_annots(fp:Path=LABEL_FILE):
   print('mean(n_bbox) before:', mean([len(v) for v in data.values()]))
 
   items = []
-  for k, v in data.items():
-    bbox_list = []
+  for k, v in data.items():   # dict -> list
+    annot_list = []
     for gt in v:
       if gt['illegibility'] or len(gt['points']) > 4 or gt['transcription'] == "###":
         continue
-      bbox_list.append({
-        'text': gt['transcription'],
-        'bbox': gt['points'],
+      annot_list.append({
+        'transcription': gt['transcription'],
+        'points': gt['points'],
       })
     items.append({
       'id': k,
-      'bbox_list': bbox_list,
+      'annots': annot_list,
     })
   items.sort(key=lambda e: int(e['id'].split('_')[-1]))
   # mean(n_bbox) after: 8.003933333333332
-  print('mean(n_bbox) after:', mean([len(it['bbox_list']) for it in items]))
+  print('mean(n_bbox) after:', mean([len(it['annots']) for it in items]))
 
   save_fp = fp.with_suffix('.jsonl')
   print(f'>> write to cache file {save_fp}')
@@ -82,7 +82,8 @@ def preprocess_annots(fp:Path=LABEL_FILE):
       fh.write(json.dumps(it, indent=None, ensure_ascii=False))
       fh.write('\n')
 
-def load_annots(fp:Path=PROCESSED_LABEL_FILE) -> Annots:
+def load_annots(fp:Path=None) -> Annots:
+  fp = fp or PROCESSED_LABEL_FILE
   if not fp.is_file():
     preprocess_annots(fp.with_suffix('.json'))
 
@@ -91,35 +92,57 @@ def load_annots(fp:Path=PROCESSED_LABEL_FILE) -> Annots:
     for line in fh.readlines():
       if not line: continue
       data = json.loads(line.strip())
-      annots[data['id']] = [BBox(bbox['text'], bbox['bbox']) for bbox in data['bbox_list']]
+      annots[data['id']] = data['annots']  # list -> dict
   return annots
 
 
 ''' Results '''
 
-def save_infer_results(results:Annots, fp:Path=DEFAULT_SAVE_FILE):
-  assert isinstance(results, dict) and len(results), 'data should be a non-empty list'
+def infer_results_to_metrics(results:InferResults, fp:Path=None) -> Metrics:
+  annots = load_annots(fp)
+  metrics: Metrics = {}
+  for id, annot in annots.items():
+    if id not in results: continue
+    r = results[id]
+    annot_pred = [{
+      'transcription': it.text,
+      'points': it.bbox,
+    } for it in r.annots]
+    f_score, precision, recall = calc_f1({id: annot_pred}, {id: annot})
+    metrics[id] = {
+      'Precision': precision,
+      'Recall': recall,
+      'F1-Score': f_score,
+      'Runtime': r.runtime,
+    }
+  return metrics
+
+def save_infer_results(results:InferResults, fp:Path=None):
+  fp = fp or DEFAULT_SAVE_FILE
+  assert isinstance(results, dict) and len(results), '>> infer_results should NOT be empty dict!'
   data = {
     k: [{
       'transcription': e.text,
       'points': e.bbox,
-    } for e in v]
+    } for e in v.annots]
     for k, v in results.items()
   }
   with open(fp, 'w', encoding='utf-8') as fh:
     json.dump(data, fh, indent=2, ensure_ascii=False)
   print(f'>> [save_infer_results] {fp}')
 
-def save_infer_metrics(metrics:InferMetrics, fp:Path=DEFAULT_SAVE_FILE.with_suffix('.metrics.json')):
-  assert isinstance(metrics, list) and len(metrics), 'data should be a non-empty list'
-  for it in metrics:
-    for fld in INFER_METRIC_FIELDS:
-      assert isinstance(it.get(fld), float), f'{fld} should be float type but got {type(it.get(fld))}'
-  print('>> mean(f1):',   mean([it['F1-Score'] for it in metrics]))
-  print('>> mean(time):', mean([it['i_time']   for it in metrics]))
+def save_metrics(metrics:Metrics, fp:Path=None):
+  fp = fp or DEFAULT_SAVE_FILE.with_suffix('.metrics.json')
+  assert isinstance(metrics, dict) and len(metrics), '>> metrics should NOT be empty dict!'
+  f1 = mean([e['F1-Score'] for e in metrics.values()])
+  ts = mean([e['Runtime']  for e in metrics.values()])
+  print('mean(f1):',      f1)
+  print('mean(runtime):', ts)
+  print('Estimated score:',          min(100, 90 + 40 * f1 - 0.085 * ts))
+  print('Estimated score (scaled):', min(100, 90 + 40 * f1 - 0.085 * ts / 160))
 
   with open(fp, 'w', encoding='utf-8') as fh:
-    json.dump({"Result": metrics}, fh, indent=2, ensure_ascii=False)
+    json.dump(metrics, fh, indent=2, ensure_ascii=False)
   print(f'>> [save_infer_metrics] {fp}')
 
 
@@ -128,8 +151,8 @@ def save_infer_metrics(metrics:InferMetrics, fp:Path=DEFAULT_SAVE_FILE.with_suff
 def calc_sim(s1:str, s2:str):
   return SequenceMatcher(None, s1, s2).quick_ratio()
 
-def calc_iou(pts1:Points, pts2:Points) -> float:
-  poly1, poly2 = Polygon(pts1), Polygon(pts2)
+def calc_iou(box1:BBox, box2:BBox) -> float:
+  poly1, poly2 = Polygon(box1), Polygon(box2)
   if not poly1.is_valid: return 0.0   # poly1 is pred
   inter = poly1.intersection(poly2).area if poly1.intersects(poly2) else 0
   if inter == 0: return 0.0
@@ -139,22 +162,22 @@ def calc_iou(pts1:Points, pts2:Points) -> float:
 def calc_f1(preds:Annots, truths:Annots, iou_thresh:float=0.5, sim_thresh:float=0.5):
   assert len(preds) == len(truths), f'>> sample count mismatch: {len(preds)} != {len(truths)}'
 
-  pred_bbox_cnt = 0
-  truth_bbox_cnt = 0
+  pred_annot_cnt = 0
+  truth_annot_cnt = 0
   TP = 0
 
-  for id, truth_bbox_list in (tqdm if len(preds) > 1 else (lambda _: _))(truths.items()):
-    pred_bbox_list = preds.get(id, [])
-    pred_bbox_cnt  += len(pred_bbox_list)
-    truth_bbox_cnt += len(truth_bbox_list)
+  for id, truth_annot_list in (tqdm if len(preds) > 1 else (lambda _: _))(truths.items()):
+    pred_annot_list = preds.get(id, [])
+    pred_annot_cnt  += len(pred_annot_list)
+    truth_annot_cnt += len(truth_annot_list)
 
     pred_matched = set()
     truth_matched = set()
-    for truth_idx, truth_bbox in enumerate(truth_bbox_list):
-      for pred_idx, pred_bbox in enumerate(pred_bbox_list):
-        iou = calc_iou(pred_bbox.bbox, truth_bbox.bbox)
+    for truth_idx, truth_annot in enumerate(truth_annot_list):
+      for pred_idx, pred_annot in enumerate(pred_annot_list):
+        iou = calc_iou(pred_annot['points'], truth_annot['points'])
         if iou <= iou_thresh: continue
-        sim = calc_sim(pred_bbox.text, truth_bbox.text)
+        sim = calc_sim(pred_annot['transcription'], truth_annot['transcription'])
         if sim <= sim_thresh: continue
 
         if pred_idx not in pred_matched:
@@ -163,8 +186,8 @@ def calc_f1(preds:Annots, truths:Annots, iou_thresh:float=0.5, sim_thresh:float=
           TP += 1
           break
 
-  precision = safe_div(TP, pred_bbox_cnt)
-  recall    = safe_div(TP, truth_bbox_cnt)
+  precision = safe_div(TP, pred_annot_cnt)
+  recall    = safe_div(TP, truth_annot_cnt)
   f_score   = safe_div(2 * precision * recall, precision + recall)
   return f_score, precision, recall
 
@@ -177,4 +200,4 @@ def calc_score(preds:Annots, truths:Annots, infer_time:float, is_real_chip:bool=
 
 if __name__ == '__main__':
   annots = load_annots()
-  calc_score(annots, annots, infer_time=500, is_real_chip=False)
+  calc_score(annots, annots, infer_time=500, is_real_chip=False)    # ~1min50s

@@ -26,16 +26,9 @@
 
 开源项目实测
 
+⚪ install
+
 ```shell
-# venv
-conda create -y -n tpu python==3.10
-conda activate tpu
-pip install onnxruntime
-# test data
-mkdir data & pushd data
-wget -nc https://paddleocr.bj.bcebos.com/dygraph_v2.1/ppocr_img.zip
-unzip ppocr_img.zip
-popd
 # (optional) packages, run PPOCR
 pip install paddlepaddle paddleocr
 # (optional) packages, run RapidOCR (NOT recommended, even twice slower than PPOCR!)
@@ -45,6 +38,10 @@ pip install cnocr[ort-cpu]
 # (optional) repository, run ChineseOCR-Lite
 # => manually run repo/init_repos.cmd
 ```
+
+⚪ run
+
+参考 [run_repo_infer.cmd](./run_repo_infer.cmd) 中各运行命令
 
 
 ### 前车之鉴

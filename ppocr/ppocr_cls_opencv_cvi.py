@@ -23,24 +23,30 @@ import sys
 import tpu_mlir
 sys.path.append(tpu_mlir.tools_path)
 print(tpu_mlir.tools_path)  
-#import sophon.sail as sail
-#from model_runner import model_inference
+try:
+    import sophon.sail as sail
+    from model_runner import model_inference
+except ImportError:
+    pass
 
 
 class PPOCRv2Cls:
 
     def __init__(self, args):
-        self.cls_thresh = args.cls_thresh
-        self.label_list = args.label_list
-        # load bmodel
+        # load cvimodel
         model_path = args.cvimodel_cls
         logging.info("using model {}".format(model_path))
+        # self.net = sail.Engine(model_path, args.dev_id, sail.IOMode.SYSIO)
         self.net = model_path
         self.graph_name = 'ch_PP-OCRv3_cls'
         self.input_name = 'x'
+        self.input_shape = [1, 3, 48, 640]
+        self.cls_batch_size = 1
         logging.info("load cvimodel success!")
-        self.input_shape = [1,3,48,640]
-        self.cls_batch_size = self.input_shape[0] # Max batch size in model stages.
+        # hparam
+        self.cls_thresh = args.cls_thresh
+        self.label_list = args.label_list
+        # perfcnt
         self.preprocess_time = 0.0
         self.inference_time = 0.0
         self.postprocess_time = 0.0
@@ -92,13 +98,13 @@ class PPOCRv2Cls:
     def __call__(self, img_list):
         img_num = len(img_list)
         img_input_list = []
-        
+
         start_prep = time.time()
         for img in img_list:
             img = self.preprocess(img)
             img_input_list.append(img)
         self.preprocess_time += time.time() - start_prep
-        
+
         start_infer = time.time()
         cls_res = []
         for beg_img_no in range(0, img_num, self.cls_batch_size):
@@ -121,7 +127,7 @@ class PPOCRv2Cls:
             if res[0] == '180' and res[1] > self.cls_thresh:
                 img_list[id] = cv2.rotate(img_list[id], 1)
         self.postprocess_time += time.time() - start_post
-            
+
         return img_list, cls_res
 
 
@@ -135,7 +141,7 @@ def main(opt):
         print(img_file, label)
         src_img = cv2.imdecode(np.fromfile(img_file, dtype=np.uint8), -1)
         img_list.append(src_img)
-    
+
     img_list, res = ppocrv2_cls(img_list)
     for id, img_name in enumerate(os.listdir(opt.input)):
         logging.info("img_name:{}, pred:{}, conf:{}".format(img_name, res[id][0], res[id][1]))
@@ -147,6 +153,7 @@ def list_type(arg):
 
 if __name__ == '__main__':
     parser = ArgumentParser(prog=__file__)
+    parser.add_argument('--dev_id', type=int, default=0, help='tpu card id')
     parser.add_argument('--input', type=str, default='./datasets/cali_set_rec', help='input image directory path')
     parser.add_argument('--cvimodel_cls', type=str, default='./models/ch_PP-OCRv3_cls.cvimodel', help='classifier cvimodel path')
     parser.add_argument("--cls_thresh", type=float, default=0.9)

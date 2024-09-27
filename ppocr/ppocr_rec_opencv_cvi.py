@@ -22,8 +22,11 @@ import sys
 import tpu_mlir
 sys.path.append(tpu_mlir.tools_path)
 print(tpu_mlir.tools_path)
-#import sophon.sail as sail
-#from model_runner import model_inference
+try:
+    import sophon.sail as sail
+    from model_runner import model_inference
+except ImportError:
+    pass
 
 
 # input: x.1, [1, 3, 32, 124], float32, scale: 1
@@ -33,17 +36,18 @@ class PPOCRv2Rec:
         # load cvimodel
         model_path = args.cvimodel_rec
         logging.info("using model {}".format(model_path))
+        # self.net = sail.Engine(model_path, args.dev_id, sail.IOMode.SYSIO)
         self.net = model_path
         self.graph_name = 'ch_PP-OCRv3_rec'
         self.input_name = 'x'
-        self.input_shape = [1,3,48,640]
-        self.rec_batch_size = self.input_shape[0]
+        self.input_shape = [1, 3, 48, 640]
+        self.rec_batch_size = 1
         logging.info("load cvimodel success!")
+        # hparam
         self.img_size = args.img_size
         self.img_size = sorted(self.img_size, key=lambda x: x[0])
         self.img_ratio = [x[0]/x[1] for x in self.img_size]
         self.img_ratio = sorted(self.img_ratio)
-        # 解析字符字典
         self.character = ['blank']
         with open(args.char_dict_path, "rb") as fin:
             lines = fin.readlines()
@@ -52,18 +56,20 @@ class PPOCRv2Rec:
                 self.character.append(line)
         if args.use_space_char:
             self.character.append(" ")
+        self.beam_search = args.use_beam_search
+        self.beam_size = args.beam_size
+        # perfcnt
         self.preprocess_time = 0.0
         self.inference_time = 0.0
         self.postprocess_time = 0.0
-        self.beam_search = args.use_beam_search
-        self.beam_size = args.beam_size
+
     
     def preprocess(self, img):
         start_prep = time.time()
         h, w, _ = img.shape
         ratio = w / float(h)
         if ratio > self.img_ratio[-1]:
-            logging.debug("Warning: ratio out of range: h = %d, w = %d, ratio = %f, cvimodel with larger width is recommended."%(h, w, ratio))
+            logging.debug("Warning: ratio out of range: h = %d, w = %d, ratio = %f, cvimodel with larger width is recommended." % (h, w, ratio))
             resized_w = self.img_size[-1][0]
             resized_h = self.img_size[-1][1]
             padding_w = resized_w
@@ -93,7 +99,6 @@ class PPOCRv2Rec:
         input_data = {self.input_name: np.array(tensor, dtype=np.float32)}
         outputs = model_inference(input_data, self.net)
         self.inference_time += time.time() - start_infer
-        # return list(outputs.values())[0]
         return outputs['softmax_5.tmp_0_Softmax_f32']
 
     def postprocess(self, outputs, beam_search=False, beam_width=5):
@@ -113,10 +118,10 @@ class PPOCRv2Rec:
                         top_candidates = np.argsort(-next_char_probs)[:beam_width]
 
                         for c in top_candidates:
-                                new_prefix = beam['prefix'] + [c]
-                                new_score = beam['score'] * next_char_probs[c]
-                                new_confs = beam['confs'] + [next_char_probs[c]]
-                                new_beams.append({'prefix': new_prefix, 'score': new_score, 'confs':new_confs})
+                            new_prefix = beam['prefix'] + [c]
+                            new_score = beam['score'] * next_char_probs[c]
+                            new_confs = beam['confs'] + [next_char_probs[c]]
+                            new_beams.append({'prefix': new_prefix, 'score': new_score, 'confs':new_confs})
 
                     new_beams.sort(key=lambda x: -x['score'])
                     beams = new_beams[:beam_width]
@@ -214,13 +219,8 @@ def main(opt):
     ppocrv2_rec = PPOCRv2Rec(opt)
     img_list = []
     for img_name in os.listdir(opt.input):
-        print(img_name)
-        #img_name = '川JK0707.jpg'
-        label = img_name.split('.')[0]
         img_file = os.path.join(opt.input, img_name)
-        #print(img_file, label)
         src_img = cv2.imdecode(np.fromfile(img_file, dtype=np.uint8), -1)
-        #print(src_img.shape)
         img_list.append(src_img)
 
     rec_res = ppocrv2_rec(img_list)
@@ -238,13 +238,14 @@ def img_size_type(arg):
 
 if __name__ == '__main__':
     parser = ArgumentParser(prog=__file__)
+    parser.add_argument('--dev_id', type=int, default=0, help='tpu card id')
     parser.add_argument('--input', type=str, default='../datasets/cali_set_rec', help='input image directory path')
     parser.add_argument('--cvimodel_rec', type=str, default='./models/ch_PP-OCRv3_rec.cvimodel', help='recognizer cvimodel path')
     parser.add_argument('--img_size', type=img_size_type, default=[[640, 48],[320, 48]], help='You should set inference size [width,height] manually if using multi-stage cvimodel.')
     parser.add_argument("--char_dict_path", type=str, default="./datasets/ppocr_keys_v1.txt")
     parser.add_argument("--use_space_char", type=bool, default=True)
     parser.add_argument('--use_beam_search', action='store_const', const=True, default=False, help='Enable beam search')
-    parser.add_argument("--beam_size", type=int, default=5, choices=range(1,41), help='Only valid when using beam search, valid range 1~40')
+    parser.add_argument("--beam_size", type=int, default=5, choices=range(1, 41), help='Only valid when using beam search, valid range 1~40')
     opt = parser.parse_args()
 
     main(opt)
