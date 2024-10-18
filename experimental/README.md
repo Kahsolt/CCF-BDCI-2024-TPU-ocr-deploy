@@ -102,11 +102,6 @@ pip install cnocr[ort-cpu]
 - PaddleOCR test: https://paddleocr.bj.bcebos.com/dygraph_v2.1/ppocr_img.zip
 - tpu-mlir 资料
   - 算能云开发平台使用说明 https://tpumlir.org/index.html
-  - PP-OCR 模型部署参考示例
-    - 移植 https://docs.qq.com/pdf/DSUlabGVFRlBkQkZv
-      - 将 ch_PP-OCRv3_xx 系列模型迁移至 BM1684/BM1684X/BM1688/CV186X
-      - FP16/FP32 部署，F1 score约
-    - 推理 https://github.com/sophgo/sophon-demo/tree/release/sample/PP-OCR
   - Duo系列开发板
     - site: https://milkv.io/duo
     - doc: https://milkv.io/docs/duo/overview
@@ -116,6 +111,8 @@ pip install cnocr[ort-cpu]
 ### 前车之鉴
 
 - 移植 https://docs.qq.com/pdf/DSUlabGVFRlBkQkZv
+  - 将 ch_PP-OCRv3_xx 系列模型迁移至 CV181X
+  - det(INT8) / rec(BF16) 部署
 - 推理 https://github.com/sophgo/sophon-demo/tree/release/sample/PP-OCR
   - 将 ch_PP-OCRv3_xx 系列模型迁移至 BM1684/BM1684X/BM1688/CV186X
     - [BM1684](https://www.sophgo.com/sophon-u/product/introduce/bm1684.html) (16 TOPS INT8?)
@@ -135,10 +132,10 @@ pip install cnocr[ort-cpu]
 ⚠ 既然出题方已有一套完整的移植流程，他为什么还要出题，他做不到的事是什么
 
 - 算能给出的[移植教程](https://docs.qq.com/pdf/DSUlabGVFRlBkQkZv) 实现了 `CV181x` 部署，但 MilkV-Duo 是 `CV180x` 型号
+  - [Milk-V Duo CV1800B](https://milkv.io/duo) == [SOPHGO CV180xB](https://en.sophgo.com/sophon-u/product/introduce/cv180xb.html)
 - 老板子算力高 (32 TOPS INT8)，新板子算力更低 (0.5 TOPS INT8)，对于推理速度是个挑战
-  - [Milk-V Duo CV1800B](https://milkv.io/duo)
 - 更新 PP-OCRv4 了，新模型 3.5M 更轻量化且号称精度指标更高
-- 移植教程中提到了量化，但推理仓库中无量化实验，可能他量化失败了
+- 移植教程中提到了 INT8 量化，但推理仓库中相应实验，可能他量化失败了
 
 ----
 by Armit

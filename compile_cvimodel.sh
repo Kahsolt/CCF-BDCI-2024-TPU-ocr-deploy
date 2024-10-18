@@ -93,8 +93,8 @@ model_runner.py \
   --model $CVI_MODEL_FILE \
   --output $TEST_RESULT
 
-mkdir -p $BASE_PATH/models
-cp $CVI_MODEL_FILE $BASE_PATH/models
+mkdir -p $BASE_PATH/cvimodel
+cp $CVI_MODEL_FILE $BASE_PATH/cvimodel
 popd
 
 echo Done!

@@ -9,8 +9,10 @@ datasets/
 downloads/*
 !downloads/*.cmd
 
-# sdk
-tpu-mlir
+# sdk & cross-compile stuff
+tpu-mlir/
+duo-sdk/
+sophon-sail/
 
 # generated
 results/

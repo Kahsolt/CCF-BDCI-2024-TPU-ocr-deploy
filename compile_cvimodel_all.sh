@@ -12,3 +12,5 @@ bash ./convert_cvimodel.sh rec v2
 bash ./convert_cvimodel.sh det mb
 bash ./convert_cvimodel.sh rec mb
 bash ./convert_cvimodel.sh cls mb
+
+rm -rf ./tmp
