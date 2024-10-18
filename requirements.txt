@@ -1,0 +1,4 @@
+# depenencies needed for host OS
+# we need this to run 'models\download.cmd'
+
+paddleocr_convert

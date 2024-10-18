@@ -9,6 +9,9 @@ datasets/
 downloads/*
 !downloads/*.cmd
 
+# sdk
+tpu-mlir
+
 # generated
 results/
 tmp/

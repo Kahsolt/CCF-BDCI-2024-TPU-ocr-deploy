@@ -10,22 +10,26 @@ Team Name: 识唔识得
 
 ### 环境搭建
 
-- 上位机: 用 tpu_mlir 编译工具箱进行 cvimodel 的仿真+编译
-- 板子: 用 sophon.sail 运行框架进行 cvimodel 的部署+运行
-
 ⚪ 上位机
 
 - 运行 `downloads\download.cmd` 下载文件资源材料
-- 运行 `run_docker.cmd` 以启动 docker 环境 (**此后一切操作都在 Docker 中进行**)
-  - `pip install -r requirements_tpuc_dev.txt`
-  - ``
-  - 该工具箱的安装路径为 `/usr/local/lib/python3.10/dist-packages/tpu_mlir` 以后可能会用到
-  - 可执行脚本在其 `$TPU_MLIR_ROOT/bin` 和 `$TPU_MLIR_ROOT/python/tools` 目录下
+- 下载 paddle 模型文件并转 onnx
+  - `pip install -r requirements.txt`
+  - run `models\download.cmd`
+- 运行 `run_docker.cmd` 以启动 docker 环境 (下列命令在在 Docker 中进行)
+  - `bash ./convert_cvimodel.sh det`
+  - `bash ./convert_cvimodel.sh rec`
+  - `bash ./convert_cvimodel.sh cls mb`
 
 ⚪ 板子
 
-- 暂时不知道阿
-- 运行时框架 sophon.sail??!
+- (TODO) 用 cviruntime 运行框架进行 cvimodel 的部署+运行
+
+
+#### references
+
+- https://github.com/Kahsolt/MilkV-Duo-init
+- https://github.com/sophgo/cviruntime
 
 ----
 by Armit
