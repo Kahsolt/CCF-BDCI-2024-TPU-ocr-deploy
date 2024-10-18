@@ -1,0 +1,7 @@
+# depenencies needed for Docker image tpuc_dev:latest
+# we just do these in Docker ;)
+# 1. convert paddle -> onnx
+# 2. compile cvimodel 
+
+paddleocr_convert
+./downloads./tpu_mlir-1.9b0-py3-none-any.whl
