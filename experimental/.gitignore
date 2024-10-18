@@ -1,0 +1,16 @@
+# meta
+.vscode/
+__pycache__/
+
+# data
+data/
+
+# repo
+repo/*
+!repo/*.cmd
+
+# generated
+output/
+
+# lprof
+*.lprof

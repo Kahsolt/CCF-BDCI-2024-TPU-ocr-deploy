@@ -3,15 +3,15 @@
 __pycache__/
 
 # data
-data/
+datasets/
 
-# repo
-repo/*
-!repo/*.cmd
+# downloads
+downloads/*
+!downloads/*.cmd
 
 # generated
-out/
-output/
+results/
+tmp/
 
 # logs
 log/
