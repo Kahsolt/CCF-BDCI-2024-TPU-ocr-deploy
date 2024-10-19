@@ -13,6 +13,9 @@ downloads/*
 tpu-mlir/
 duo-sdk/
 sophon-sail/
+cviruntime/
+tpu-sdk-cv180x/
+tpu-sdk-cv180x-ocr/
 
 # generated
 results/
