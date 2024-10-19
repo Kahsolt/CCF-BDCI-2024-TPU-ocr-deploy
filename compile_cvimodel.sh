@@ -28,6 +28,11 @@ else
   CALI_DATASET=$BASE_PATH/datasets/cali_set_rec
   TEST_INPUT=$CALI_DATASET/crop_9.jpg
 fi
+if [ "$TASK" == "rec" ]; then
+  DTYPE=BF16
+else
+  DTYPE=INT8
+fi
 if [ "$VERSION" == "mb" ]; then
   MODEL_NAME=ppocr_mb_${TASK}
   MODEL_DEF=$BASE_PATH/models/ch_ppocr_mobile_v2.0_${TASK}_infer.onnx
@@ -75,7 +80,7 @@ if [ ! -f $CVI_MODEL_FILE ]; then
 model_deploy.py \
   --chip cv180x \
   --mlir $MLIR_MODEL_FILE \
-  --quantize INT8 \
+  --quantize $DTYPE \
   --quant_input \
   --calibration_table $CALI_TABLE_FILE \
   --test_input $TEST_INPUT \

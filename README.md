@@ -30,16 +30,19 @@ Team Name: 识唔识得
 
 ⚪ 板子
 
-- (TODO) 用 sophon-sail 运行框架进行 cvimodel 的部署+运行
+- 用 cviruntime 运行框架进行 cvimodel 的部署+运行
+- 参考子项目 https://github.com/Kahsolt/tpu-sdk-cv180x-ocr
 
 
 #### references
 
 - https://github.com/Kahsolt/MilkV-Duo-init
+- https://github.com/Kahsolt/tpu-sdk-cv180x-ocr
 - https://github.com/sophgo/sophon-sail
 - https://github.com/sophgo/cviruntime
 - https://community.milkv.io/t/duo-linux-fdisk-resize2fs-root/42
   - 板上TF卡分区扩容，参考，记得分区不能太大！（1.5G 安全）
+- https://github.com/ZhangGe6/onnx-modifier
 
 ----
 by Armit
