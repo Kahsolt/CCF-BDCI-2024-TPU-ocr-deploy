@@ -42,23 +42,4 @@ ASSERT(tl_lut_reciprocal_result);
 
 - PPOCR-rec v3/v4 架构为 SVTRNet，里面有 Dot-Attn 机制：https://github.com/PaddlePaddle/PaddleOCR/blob/main/ppocr/modeling/backbones/rec_svtrnet.py#L419
 - PPOCR-rec v2/mb 架构为 CRNN，其 head=CTC，最后一层是 softmax: https://github.com/PaddlePaddle/PaddleOCR/blob/main/ppocr/modeling/heads/rec_ctc_head.py
-  - 尝试魔改 mlir 去掉最后一层softmax
-
-[可行!] 魔改 mlir 去掉最后一层后执行 (注意量化到BF16，识别模型INT8量化将无意义，尤其对于接近输出端的层):
-
-```
-model_deploy.py \
-  --chip cv180x \
-  --quantize BF16 \
-  --quant_input \
-  --mlir ppocr_mb_rec.mlir \
-  --calibration_table ppocr_mb_rec_cali_table \
-  --model ppocr_mb_rec.cvimodel
-model_deploy.py \
-  --chip cv180x \
-  --quantize BF16 \
-  --quant_input \
-  --mlir ppocrv2_rec.mlir \
-  --calibration_table ppocrv2_rec_cali_table \
-  --model ppocrv2_rec.cvimodel
-```
+  - [可行!] 魔改 mlir 去掉最后一层后softmax (注意需量化到BF16，识别模型INT8量化将无意义，尤其对于接近输出端的层)
