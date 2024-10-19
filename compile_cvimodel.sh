@@ -19,14 +19,14 @@ if [ "$TASK" == "cls" ] && [ "$VERSION" != "mb" ]; then
   echo ">> warn: force VERSION=mb when set TASK=cls!"
 fi
 
-if [ "$TASK" == "rec" ]; then
-  INPUT_SHAPE='[[1,3,48,640]]'
-  CALI_DATASET=$BASE_PATH/datasets/cali_set_rec
-  TEST_INPUT=$CALI_DATASET/crop_9.jpg
-else
+if [ "$TASK" == "det" ]; then
   INPUT_SHAPE='[[1,3,640,640]]'
   CALI_DATASET=$BASE_PATH/datasets/cali_set_det
   TEST_INPUT=$CALI_DATASET/gt_97.jpg
+else
+  INPUT_SHAPE='[[1,3,48,640]]'
+  CALI_DATASET=$BASE_PATH/datasets/cali_set_rec
+  TEST_INPUT=$CALI_DATASET/crop_9.jpg
 fi
 if [ "$VERSION" == "mb" ]; then
   MODEL_NAME=ppocr_mb_${TASK}
