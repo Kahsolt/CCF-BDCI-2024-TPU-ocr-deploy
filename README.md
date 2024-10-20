@@ -10,28 +10,32 @@ Team Name: 识唔识得
 
 ### 环境搭建
 
-⚪ 资源获取
+⚪ 资源获取 (run on Windows)
 
-- 运行 `downloads\download.cmd` 下载资源材料文件
+- `downloads\download.cmd`
+- `git clone https://github.com/Kahsolt/tpu-sdk-cv180x-ocr`
 
-⚪ 上位机
+⚪ 上位机 (模型编译)
 
-ℹ 运行 `run_docker.cmd` 以启动 docker 环境，下列命令在 Docker 中进行
+ℹ 可跳过，直接使用我预编译的模型 [tpu-sdk-cv180x-ocr/cvimodels](./tpu-sdk-cv180x-ocr/cvimodels/)  
 
-- 下载并转换模型: paddle -> onnx (可跳过，直接使用我预编译的模型 [cvimodel](./cvimodel/))
+- 下载并转换模型: paddle -> onnx (run on Windows)
   - `pip install -r requirements.txt`
-  - read and run `models\download_and_convert.cmd` line by line
-- 编译模型文件: onnx -> cvimodel (可跳过，直接使用我预编译的模型 [cvimodel](./cvimodel/))
+  - run `models\download_and_convert.cmd`
+- 编译模型文件: onnx -> cvimodel (run in Docker container [tpu-mlir](./run_docker.cmd))
   - `bash ./convert_cvimodel.sh det v3`
   - `bash ./convert_cvimodel.sh rec v3`
   - `bash ./convert_cvimodel.sh cls mb`
-- 交叉编译板上模型的运行时 sophon-sail (可跳过，直接使用我预编译的运行时库 [runtime](./runtime/))
-  - read and run [compile_runtime.sh](./compile_runtime.sh) line by line
 
-⚪ 板子
+⚪ 上位机 (运行时编译)
 
-- 用 cviruntime 运行框架进行 cvimodel 的部署+运行
-- 参考子项目 https://github.com/Kahsolt/tpu-sdk-cv180x-ocr
+ℹ 可跳过，直接使用我预编译的运行时 [tpu-sdk-cv180x-ocr/samples/ppocr_*](./tpu-sdk-cv180x-ocr/samples/)
+
+- 参考各子项目的说明文件 `tpu-sdk-cv180x-ocr/samples/ppocr_*/README.md`
+
+⚪ 板子 (跑推理！)
+
+- 参考各子项目的说明文件 `tpu-sdk-cv180x-ocr/samples/ppocr_*/README.md`
 
 
 #### references
