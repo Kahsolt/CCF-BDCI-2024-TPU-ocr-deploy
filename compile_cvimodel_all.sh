@@ -2,12 +2,12 @@
 
 # 一键编译所有ppocr模型！
 
-# 量化情况 (所有模型均有 --quant_input --fuse_preprocess, 且为对称量化)
-#      IN  PROCESS   OUT
-# det INT8   INT8   INT8
-# rec INT8   BF16   FP32
-# cls INT8   INT8   FP32
-# (*) rec-v3/v4 无法部署，不支持 softmax 操作
+# 量化情况 (所有模型均有 --fuse_preprocess --quant_input --quant_output, 且为对称量化)
+#      IN   PROCESS   OUT
+# det UINT8   INT8   INT8     // --quantize INT8
+# rec UINT8   BF16   FP32     // --quantize BF16  (out is force-casted to FP32 due to chip cpu not support BF16 :(
+# cls UINT8   INT8   INT8     // --quantize INT8
+# (*) rec-v3/v4 无法部署，不支持 attn-softmax 操作 (疑似爆内存)
 #
 # 前处理情况
 # - det 使用一套 mean/var, rec/cls 使用另一套 

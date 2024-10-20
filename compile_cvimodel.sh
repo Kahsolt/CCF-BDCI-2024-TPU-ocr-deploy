@@ -31,21 +31,22 @@ if [ "$TASK" == "det" ]; then
   SCALE=0.01712475,0.017507,0.01742919
   CALI_DATASET=$BASE_PATH/datasets/cali_set_det
   TEST_INPUT=$CALI_DATASET/gt_97.jpg
-  QUANT_OUTPUT=--quant_output
 else
   INPUT_SHAPE='[[1,3,48,640]]'
   MEAN=127.5,127.5,127.5
   SCALE=0.0078125,0.0078125,0.0078125
   CALI_DATASET=$BASE_PATH/datasets/cali_set_rec
   TEST_INPUT=$CALI_DATASET/crop_9.jpg
-  QUANT_OUTPUT=
 fi
-if [ "$TASK" == "rec" ]; then
-  DTYPE=BF16
-  ONNX_FILE_SUFFIX=.modify
-else
+if [ "$TASK" == "det" ]; then
   DTYPE=INT8
   ONNX_FILE_SUFFIX=
+elif [ "$TASK" == "rec" ]; then
+  DTYPE=BF16
+  ONNX_FILE_SUFFIX=.modify
+else    # cls
+  DTYPE=INT8
+  ONNX_FILE_SUFFIX=.modify
 fi
 if [ "$VERSION" == "mb" ]; then
   MODEL_NAME=ppocr_mb_${TASK}
@@ -88,7 +89,7 @@ model_deploy.py \
   --mlir $MLIR_MODEL_FILE \
   --quantize $DTYPE \
   --quant_input \
-  $QUANT_OUTPUT \
+  --quant_output \
   --calibration_table $CALI_TABLE_FILE \
   --test_input $TEST_INPUT \
   --test_reference $TEST_RESULT \

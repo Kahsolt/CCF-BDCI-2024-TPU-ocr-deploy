@@ -36,3 +36,7 @@ FOR /F %%d in ('DIR /O:NG /T:W /B *_infer') DO (
   POPD
   RMDIR /Q /S %%d
 )
+
+
+REM TODO: manually remove the last softmax layer of rec/cls models via https://github.com/ZhangGe6/onnx-modifier
+REM save as *.modify.onnx
