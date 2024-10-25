@@ -16,6 +16,9 @@ sophon-sail/
 cviruntime/
 tpu-sdk-cv180x/
 tpu-sdk-cv180x-ocr/
+build_sophon_sail/*
+!build_sophon_sail/*.sh
+!build_sophon_sail/*.cmake
 
 # generated
 results/
