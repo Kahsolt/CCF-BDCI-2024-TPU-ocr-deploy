@@ -3,7 +3,8 @@
 __pycache__/
 
 # data
-datasets/
+datasets/*
+!datasets/train_full_images.json
 
 # downloads
 downloads/*

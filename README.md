@@ -47,6 +47,7 @@ Team Name: 识唔识得
 - https://community.milkv.io/t/duo-linux-fdisk-resize2fs-root/42
   - 板上TF卡分区扩容，参考，记得分区不能太大！（1.5G 安全）
 - https://github.com/ZhangGe6/onnx-modifier
+- https://github.com/zcswdt/OCR_ICDAR_label_revise
 
 ----
 by Armit

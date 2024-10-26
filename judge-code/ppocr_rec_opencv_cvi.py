@@ -8,28 +8,19 @@
 #===----------------------------------------------------------------------===#
 # -*- coding: utf-8 -*- 
 
-import logging
-logging.basicConfig(level=logging.DEBUG)
+import logging ; logging.basicConfig(level=logging.DEBUG)
 
 import os
-import time
+from time import time
 from argparse import ArgumentParser
+from typing import List
 
 import cv2
 import numpy as np
-
-import sys
-import tpu_mlir
-sys.path.append(tpu_mlir.tools_path)
-print(tpu_mlir.tools_path)
-try:
-    import sophon.sail as sail
-    from model_runner import model_inference
-except ImportError:
-    pass
+from numpy import ndarray
+import onnxruntime as ort
 
 
-# input: x.1, [1, 3, 32, 124], float32, scale: 1
 class PPOCRv2Rec:
 
     def __init__(self, args):
@@ -37,7 +28,7 @@ class PPOCRv2Rec:
         model_path = args.cvimodel_rec
         logging.info("using model {}".format(model_path))
         # self.net = sail.Engine(model_path, args.dev_id, sail.IOMode.SYSIO)
-        self.net = model_path
+        self.net = ort.InferenceSession(model_path)
         self.graph_name = 'ch_PP-OCRv3_rec'
         self.input_name = 'x'
         self.input_shape = [1, 3, 48, 640]
@@ -49,24 +40,22 @@ class PPOCRv2Rec:
         self.img_ratio = [x[0]/x[1] for x in self.img_size]
         self.img_ratio = sorted(self.img_ratio)
         self.character = ['blank']
-        with open(args.char_dict_path, "rb") as fin:
+        with open(args.char_dict_path, 'r', encoding='utf-8') as fin:
             lines = fin.readlines()
             for line in lines:
-                line = line.decode('utf-8').strip("\n").strip("\r\n")
+                line = line.strip("\n").strip("\r\n")
                 self.character.append(line)
         if args.use_space_char:
             self.character.append(" ")
         self.beam_search = args.use_beam_search
         self.beam_size = args.beam_size
         # perfcnt
-        self.preprocess_time = 0.0
-        self.inference_time = 0.0
+        self.preprocess_time  = 0.0
+        self.inference_time   = 0.0
         self.postprocess_time = 0.0
 
-    
-    def preprocess(self, img):
-        start_prep = time.time()
-        h, w, _ = img.shape
+    def preprocess(self, im:ndarray):
+        h, w, _ = im.shape
         ratio = w / float(h)
         if ratio > self.img_ratio[-1]:
             logging.debug("Warning: ratio out of range: h = %d, w = %d, ratio = %f, cvimodel with larger width is recommended." % (h, w, ratio))
@@ -80,29 +69,29 @@ class PPOCRv2Rec:
                     resized_w = int(resized_h * ratio)
                     padding_w = int(resized_h * max_ratio)
                     break
-            
+        # 在 uint8 域上 resize (?)
         if h != resized_h or w != resized_w:
-            img = cv2.resize(img, (resized_w, resized_h))
-        img = img.astype('float32')
-        img = np.transpose(img, (2, 0, 1))
-        img -= 127.5
-        img *= 0.0078125
+            im = cv2.resize(im, (resized_w, resized_h), interpolation=cv2.INTER_LINEAR)
 
-        padding_im = np.zeros((3, resized_h, padding_w), dtype=np.float32)
-        padding_im[:, :, 0:resized_w] = img
-        
-        self.preprocess_time += time.time() - start_prep
-        return padding_im
+        # to [C, H, W], f32
+        im = im.astype(np.float32)
+        im -= 127.5        # = 255/2
+        im *= 0.0078125    # = 1/127
+        im = im.transpose(2, 0, 1)
 
-    def predict(self, tensor):
-        start_infer = time.time()
-        input_data = {self.input_name: np.array(tensor, dtype=np.float32)}
-        outputs = model_inference(input_data, self.net)
-        self.inference_time += time.time() - start_infer
-        return outputs['softmax_5.tmp_0_Softmax_f32']
+        # right pad 0
+        im_pad = np.zeros((3, resized_h, padding_w), dtype=np.float32)
+        im_pad[:, :, :resized_w] = im
+        return im_pad
 
-    def postprocess(self, outputs, beam_search=False, beam_width=5):
-        start_post = time.time()
+    def predict(self, x):
+        start_infer = time()
+        outputs =  self.net.run([self.net.get_outputs()[0].name], {self.input_name: x})[0]
+        self.inference_time += time() - start_infer
+        return outputs      # [B=1, L=40, NC=6625]
+
+    def postprocess(self, outputs:ndarray, beam_search=False, beam_width=5):
+        start_post = time()
         result_list = []
 
         if beam_search:
@@ -145,25 +134,21 @@ class PPOCRv2Rec:
                 result_list.append((''.join(char_list), np.mean(conf_list)))
 
         else:  # original postprocess
-            outputs =  np.squeeze(outputs, axis=-1)
-            print("outputs shape:", outputs.shape)
             preds_idx = outputs.argmax(axis=2)
-            print("preds_idx shape:", preds_idx.shape)
             preds_prob = outputs.max(axis=2)
-            print("preds_prob shape:", preds_prob.shape)
             for batch_idx, pred_idx in enumerate(preds_idx):
-                print("pred_idx shape:", pred_idx.shape)
                 char_list = []
                 conf_list = []
                 pre_c = pred_idx[0]
-                print("pre_c: ",pre_c)  
+                #print("pre_c: ",pre_c)  
                 if pre_c != 0:
                     char_list.append(self.character[pre_c])
                     conf_list.append(preds_prob[batch_idx][0])
                 for idx, c in enumerate(pred_idx):
-                    if (pre_c == c) or (c == 0):
-                        if c == 0:
-                            pre_c = c
+                    if pre_c == c:
+                        continue
+                    if c == 0:
+                        pre_c = c
                         continue
                     char_list.append(self.character[c])
                     conf_list.append(preds_prob[batch_idx][idx])
@@ -171,17 +156,18 @@ class PPOCRv2Rec:
 
                 result_list.append((''.join(char_list), np.mean(conf_list)))
 
-        self.postprocess_time += time.time() - start_post
+        self.postprocess_time += time() - start_post
         return result_list
 
-    def __call__(self, img_list):
+    def __call__(self, img_list:List[ndarray]):
         img_dict = {}
         for img_size in self.img_size:
             img_dict[img_size[0]] = {"imgs":[], "ids":[], "res":[]}
         for id, img in enumerate(img_list):
+            start_pre = time()
             img = self.preprocess(img)
-            if img is None:
-                continue
+            self.preprocess_time += time() - start_pre
+            if img is None: continue
             img_dict[img.shape[2]]["imgs"].append(img)
             img_dict[img.shape[2]]["ids"].append(id)
 
@@ -190,7 +176,7 @@ class PPOCRv2Rec:
                 for img_input in img_dict[size_w]["imgs"]:
                     img_input = np.expand_dims(img_input, axis=0)
                     outputs = self.predict(img_input)
-                    res = self.postprocess(outputs,self.beam_search,self.beam_size)
+                    res = self.postprocess(outputs, self.beam_search,self.beam_size)
                     img_dict[size_w]["res"].extend(res)
             else:
                 img_num = len(img_dict[size_w]["imgs"])
@@ -217,19 +203,20 @@ class PPOCRv2Rec:
 
 def main(opt):
     ppocrv2_rec = PPOCRv2Rec(opt)
-    img_list = []
-    for img_name in os.listdir(opt.input):
+
+    file_list = sorted(os.listdir(opt.input), key=(lambda e: int(e.split('.')[0].split('_')[-1])))
+    img_list: List[ndarray] = []
+    for img_name in file_list:
         img_file = os.path.join(opt.input, img_name)
-        src_img = cv2.imdecode(np.fromfile(img_file, dtype=np.uint8), -1)
+        src_img = cv2.imdecode(np.fromfile(img_file, dtype=np.uint8), cv2.IMREAD_UNCHANGED)   # [H, W, C=3], u8 RGB
         img_list.append(src_img)
 
     rec_res = ppocrv2_rec(img_list)
     for i, id in enumerate(rec_res.get("ids")):
-        logging.info("img_name:{}, conf:{:.6f}, pred:{}".format(os.listdir(opt.input)[id], rec_res["res"][i][1], rec_res["res"][i][0]))
+        logging.info("img_name: {}, conf: {:.6f}, pred: {}".format(file_list[id], rec_res["res"][i][1], rec_res["res"][i][0]))
 
 
 def img_size_type(arg):
-    # 将字符串解析为列表类型
     img_sizes = arg.strip('[]').split('],[')
     img_sizes = [size.split(',') for size in img_sizes]
     img_sizes = [[int(width), int(height)] for width, height in img_sizes]
@@ -240,9 +227,9 @@ if __name__ == '__main__':
     parser = ArgumentParser(prog=__file__)
     parser.add_argument('--dev_id', type=int, default=0, help='tpu card id')
     parser.add_argument('--input', type=str, default='../datasets/cali_set_rec', help='input image directory path')
-    parser.add_argument('--cvimodel_rec', type=str, default='./models/ch_PP-OCRv3_rec.cvimodel', help='recognizer cvimodel path')
+    parser.add_argument('--cvimodel_rec', type=str, default='../models/ch_PP-OCRv3_rec_infer.onnx', help='recognizer cvimodel path')
     parser.add_argument('--img_size', type=img_size_type, default=[[640, 48],[320, 48]], help='You should set inference size [width,height] manually if using multi-stage cvimodel.')
-    parser.add_argument("--char_dict_path", type=str, default="./datasets/ppocr_keys_v1.txt")
+    parser.add_argument("--char_dict_path", type=str, default="../datasets/ppocr_keys_v1.txt")
     parser.add_argument("--use_space_char", type=bool, default=True)
     parser.add_argument('--use_beam_search', action='store_const', const=True, default=False, help='Enable beam search')
     parser.add_argument("--beam_size", type=int, default=5, choices=range(1, 41), help='Only valid when using beam search, valid range 1~40')
