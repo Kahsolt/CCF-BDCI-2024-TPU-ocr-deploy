@@ -29,26 +29,29 @@ class PPOCRv2Rec:
         logging.info("using model {}".format(model_path))
         # self.net = sail.Engine(model_path, args.dev_id, sail.IOMode.SYSIO)
         self.net = ort.InferenceSession(model_path)
+        node_input = self.net.get_inputs()[0]
+        node_output = self.net.get_outputs()[0]
+        print(f'>> [input] name: {node_input.name}, shape: {node_input.shape}')
+        print(f'>> [output] name: {node_output.name}, shape: {node_output.shape}')
         self.graph_name = 'ch_PP-OCRv3_rec'
         self.input_name = 'x'
-        self.input_shape = [1, 3, 48, 640]
+        if 'v3' in args.cvimodel_rec or 'v4' in args.cvimodel_rec:
+            self.input_shape = [1, 3, 48, 640]
+        else:
+            self.input_shape = [1, 3, 32, 640]
         self.rec_batch_size = 1
         logging.info("load cvimodel success!")
         # hparam
-        self.img_size = args.img_size
-        self.img_size = sorted(self.img_size, key=lambda x: x[0])
-        self.img_ratio = [x[0]/x[1] for x in self.img_size]
-        self.img_ratio = sorted(self.img_ratio)
+        self.img_size  = sorted(args.img_size)
+        self.img_ratio = sorted([x[0]/x[1] for x in self.img_size])
         self.character = ['blank']
         with open(args.char_dict_path, 'r', encoding='utf-8') as fin:
             lines = fin.readlines()
             for line in lines:
-                line = line.strip("\n").strip("\r\n")
+                line = line.strip('\r\n').strip('\n')
                 self.character.append(line)
         if args.use_space_char:
-            self.character.append(" ")
-        self.beam_search = args.use_beam_search
-        self.beam_size = args.beam_size
+            self.character.append(' ')
         # perfcnt
         self.preprocess_time  = 0.0
         self.inference_time   = 0.0
@@ -90,71 +93,31 @@ class PPOCRv2Rec:
         self.inference_time += time() - start_infer
         return outputs      # [B=1, L=40, NC=6625]
 
-    def postprocess(self, outputs:ndarray, beam_search=False, beam_width=5):
+    def postprocess(self, outputs:ndarray):
         start_post = time()
         result_list = []
 
-        if beam_search:
-            max_seq_len, num_classes = outputs.shape[1], outputs.shape[2]
-
-            for batch_idx in range(outputs.shape[0]):
-                beams = [{'prefix': [], 'score': 1.0, 'confs':[]}] 
-
-                for t in range(max_seq_len):
-                    new_beams = []
-                    for beam in beams:
-                        next_char_probs = outputs[batch_idx, t]
-                        top_candidates = np.argsort(-next_char_probs)[:beam_width]
-
-                        for c in top_candidates:
-                            new_prefix = beam['prefix'] + [c]
-                            new_score = beam['score'] * next_char_probs[c]
-                            new_confs = beam['confs'] + [next_char_probs[c]]
-                            new_beams.append({'prefix': new_prefix, 'score': new_score, 'confs':new_confs})
-
-                    new_beams.sort(key=lambda x: -x['score'])
-                    beams = new_beams[:beam_width]
-
-                best_beam = max(beams, key=lambda x: x['score'])
-
-                char_list = []
-                conf_list = []
-                pre_c = best_beam['prefix'][0]
-                if pre_c != 0:
-                    char_list.append(self.character[pre_c])
-                    conf_list.append(best_beam['confs'][0])
-                for idx, c in enumerate(best_beam['prefix']):
-                    if (pre_c == c) or (c == 0):
-                        if c == 0:
-                            pre_c = c
-                        continue
-                    char_list.append(self.character[c])
-                    conf_list.append(best_beam['confs'][idx])
+        preds_idx = outputs.argmax(axis=2)
+        preds_prob = outputs.max(axis=2)
+        for batch_idx, pred_idx in enumerate(preds_idx):
+            char_list = []
+            conf_list = []
+            pre_c = pred_idx[0]
+            #print("pre_c: ",pre_c)  
+            if pre_c != 0:
+                char_list.append(self.character[pre_c])
+                conf_list.append(preds_prob[batch_idx][0])
+            for idx, c in enumerate(pred_idx):
+                if pre_c == c:
+                    continue
+                if c == 0:
                     pre_c = c
-                result_list.append((''.join(char_list), np.mean(conf_list)))
+                    continue
+                char_list.append(self.character[c])
+                conf_list.append(preds_prob[batch_idx][idx])
+                pre_c = c
 
-        else:  # original postprocess
-            preds_idx = outputs.argmax(axis=2)
-            preds_prob = outputs.max(axis=2)
-            for batch_idx, pred_idx in enumerate(preds_idx):
-                char_list = []
-                conf_list = []
-                pre_c = pred_idx[0]
-                #print("pre_c: ",pre_c)  
-                if pre_c != 0:
-                    char_list.append(self.character[pre_c])
-                    conf_list.append(preds_prob[batch_idx][0])
-                for idx, c in enumerate(pred_idx):
-                    if pre_c == c:
-                        continue
-                    if c == 0:
-                        pre_c = c
-                        continue
-                    char_list.append(self.character[c])
-                    conf_list.append(preds_prob[batch_idx][idx])
-                    pre_c = c
-
-                result_list.append((''.join(char_list), np.mean(conf_list)))
+            result_list.append((''.join(char_list), np.mean(conf_list)))
 
         self.postprocess_time += time() - start_post
         return result_list
@@ -176,7 +139,7 @@ class PPOCRv2Rec:
                 for img_input in img_dict[size_w]["imgs"]:
                     img_input = np.expand_dims(img_input, axis=0)
                     outputs = self.predict(img_input)
-                    res = self.postprocess(outputs, self.beam_search,self.beam_size)
+                    res = self.postprocess(outputs)
                     img_dict[size_w]["res"].extend(res)
             else:
                 img_num = len(img_dict[size_w]["imgs"])
@@ -186,12 +149,12 @@ class PPOCRv2Rec:
                         for ino in range(beg_img_no, end_img_no):
                             img_input = np.expand_dims(img_dict[size_w]["imgs"][ino], axis=0)
                             outputs = self.predict(img_input)
-                            res = self.postprocess(outputs,self.beam_search,self.beam_size)
+                            res = self.postprocess(outputs)
                             img_dict[size_w]["res"].extend(res)   
                     else:
                         img_input = np.stack(img_dict[size_w]["imgs"][beg_img_no:end_img_no])
                         outputs = self.predict(img_input)
-                        res = self.postprocess(outputs,self.beam_search,self.beam_size)
+                        res = self.postprocess(outputs)
                         img_dict[size_w]["res"].extend(res)
 
         rec_res = {"res":[], "ids":[]}
@@ -231,8 +194,6 @@ if __name__ == '__main__':
     parser.add_argument('--img_size', type=img_size_type, default=[[640, 48],[320, 48]], help='You should set inference size [width,height] manually if using multi-stage cvimodel.')
     parser.add_argument("--char_dict_path", type=str, default="../datasets/ppocr_keys_v1.txt")
     parser.add_argument("--use_space_char", type=bool, default=True)
-    parser.add_argument('--use_beam_search', action='store_const', const=True, default=False, help='Enable beam search')
-    parser.add_argument("--beam_size", type=int, default=5, choices=range(1, 41), help='Only valid when using beam search, valid range 1~40')
     opt = parser.parse_args()
 
     main(opt)

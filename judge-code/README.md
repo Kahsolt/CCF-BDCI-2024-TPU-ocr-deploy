@@ -17,7 +17,12 @@
   F-score: 0.57585, Precision: 0.80885, Recall: 0.44707
 [ppocrv3 (no cls)]
   Inference time: 58.68
-  F-score: 0.57585, Precision: 0.80885, Recall: 0.44707
+  F-score: 0.57585, Precision: 0.80885, Recall: 0.44707  (rec_shape: [48,640])
+  F-score: 0.57360, Precision: 0.80604, Recall: 0.44522  (rec_shape: [48,640])
+  F-score: 0.56903, Precision: 0.79927, Recall: 0.44177  (rec_shape: [48,320])
+[ppocrv3-2 (v3 det + v2 rec)]
+  Inference time: 
+
 [ppocrv2 (no cls)]
   Inference time: 54.55
   F-score: 0.08174, Precision: 0.37194, Recall: 0.04591

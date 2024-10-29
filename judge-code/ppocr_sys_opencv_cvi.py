@@ -54,27 +54,24 @@ class TextSystem:
         self.use_angle_cls = args.use_angle_cls
         if self.use_angle_cls:
             self.text_classifier = predict_cls.PPOCRv2Cls(args)
-        self.rec_thresh = args.rec_thresh
         # hparam
+        self.rec_thresh = args.rec_thresh
+        # perfcnt
         self.crop_num = 0
         self.crop_time = 0.0
 
     def __call__(self, img_list, cls=True):
-        ori_img_list = img_list.copy()
-        results_list = [{"dt_boxes":[], "text":[], "score":[]} for i in range(len(img_list))]
-        ori_img_list = img_list.copy()
         dt_boxes_list = self.text_detector(img_list)
-
         img_dict = {"imgs":[], "dt_boxes":[], "pic_ids":[]}
         for id, dt_boxes in enumerate(dt_boxes_list):
+            img = img_list[id]
             self.crop_num += len(dt_boxes)
             start_crop = time()
-            for bno in range(len(dt_boxes)):
-                tmp_box = deepcopy(dt_boxes[bno])
-                img_crop = get_rotate_crop_image(ori_img_list[id], tmp_box)
-                img_dict["imgs"].append(img_crop)
-                img_dict["dt_boxes"].append(dt_boxes[bno])
-                img_dict["pic_ids"].append(id)
+            for box in dt_boxes:
+                img_crop = get_rotate_crop_image(img, box)  # 仿射变换并裁剪，太高则旋转90度横置
+                img_dict["imgs"]    .append(img_crop)
+                img_dict["dt_boxes"].append(box)
+                img_dict["pic_ids"] .append(id)
             self.crop_time += time() - start_crop
 
         if self.use_angle_cls and cls:
@@ -87,12 +84,9 @@ class TextSystem:
             if score >= self.rec_thresh:
                 pic_id = img_dict["pic_ids"][id]
                 results_list[pic_id]["dt_boxes"].append(img_dict["dt_boxes"][id])
-                results_list[pic_id]["text"].append(text)
-                results_list[pic_id]["score"].append(score)
+                results_list[pic_id]["text"]    .append(text)
+                results_list[pic_id]["score"]   .append(score)
 
-        for i, results_list_per_img in enumerate(results_list):
-            if len(results_list_per_img["dt_boxes"]):
-                results_list[i] = sorted_boxes_dict(results_list_per_img)
         return results_list
 
 
@@ -100,67 +94,17 @@ def get_rotate_crop_image(img, points):
     assert len(points) == 4, "shape of points must be 4*2"
     img_crop_width  = int(max(np.linalg.norm(points[0] - points[1]), np.linalg.norm(points[2] - points[3])))
     img_crop_height = int(max(np.linalg.norm(points[0] - points[3]), np.linalg.norm(points[1] - points[2])))
-
     # align with cpp
     img_crop_width  = max(16, img_crop_width)
     img_crop_height = max(16, img_crop_height)
 
     pts_std = np.float32([[0, 0], [img_crop_width, 0], [img_crop_width, img_crop_height], [0, img_crop_height]])
-    M = cv2.getPerspectiveTransform(points, pts_std)
+    M = cv2.getPerspectiveTransform(points.astype(np.float32), pts_std)
     dst_img = cv2.warpPerspective(img, M, (img_crop_width, img_crop_height), borderMode=cv2.BORDER_REPLICATE, flags=cv2.INTER_CUBIC)
     dst_img_height, dst_img_width = dst_img.shape[0:2]
-    if dst_img_height * 1.0 / dst_img_width >= 1.5:
+    if dst_img_height / dst_img_width >= 1.5:
         dst_img = np.rot90(dst_img)
     return dst_img
-
-
-def sorted_boxes(dt_boxes):
-    """
-    Sort text boxes in order from top to bottom, left to right
-    args:
-        dt_boxes(array):detected text boxes with shape [4, 2]
-    return:
-        sorted boxes(array) with shape [4, 2]
-    """
-    num_boxes = dt_boxes.shape[0]
-    sorted_boxes = sorted(dt_boxes, key=lambda x: (x[0][1], x[0][0]))
-    _boxes = list(sorted_boxes)
-
-    for i in range(num_boxes - 1):
-        if abs(_boxes[i + 1][0][1] - _boxes[i][0][1]) < 10 and (_boxes[i + 1][0][0] < _boxes[i][0][0]):
-            tmp = _boxes[i]
-            _boxes[i] = _boxes[i + 1]
-            _boxes[i + 1] = tmp
-    return _boxes
-
-
-def sorted_boxes_dict(dt_boxes_dict):
-    num_boxes = len(dt_boxes_dict["dt_boxes"])
-    sorted_list = sorted(zip(*dt_boxes_dict.values()), key=lambda x: (x[0][0][1], x[0][0][0]))
-    sorted_boxes_dict = {}
-    sorted_boxes_dict["dt_boxes"], sorted_boxes_dict["text"], sorted_boxes_dict["score"] = map(list, zip(*sorted_list))
-    _boxes  = list(sorted_boxes_dict["dt_boxes"])
-    _texts  = list(sorted_boxes_dict["text"])
-    _scores = list(sorted_boxes_dict["score"])
-
-    for i in range(num_boxes - 1):
-        if abs(_boxes[i + 1][0][1] - _boxes[i][0][1]) < 10 and (_boxes[i + 1][0][0] < _boxes[i][0][0]):
-            tmp = _boxes[i]
-            _boxes[i] = _boxes[i + 1]
-            _boxes[i + 1] = tmp
-
-            tmp = _texts[i]
-            _texts[i] = _texts[i + 1]
-            _texts[i + 1] = tmp
-
-            tmp = _scores[i]
-            _scores[i] = _scores[i + 1]
-            _scores[i + 1] = tmp
-
-    sorted_boxes_dict["dt_boxes"] = _boxes
-    sorted_boxes_dict["text"] = _texts
-    sorted_boxes_dict["score"] = _scores
-    return sorted_boxes_dict
 
 
 def draw_ocr_box_txt(image, boxes, txts, scores=None, rec_thresh=0.5, font_path="../datasets/fonts/simfang.ttf"):
@@ -259,7 +203,7 @@ def main(opt):
                 for j in range(len(result["text"]))
             ]
 
-            if 'draw':
+            if opt.save_draw:
                 draw_img = draw_ocr_box_txt(img, result["dt_boxes"], result["text"], result["score"], rec_thresh=opt.rec_thresh)
                 img_path = os.path.join(draw_img_save, "ocr_res_{}".format(img_name))
                 cv2.imwrite(img_path, draw_img[:, :, ::-1])
@@ -324,6 +268,7 @@ if __name__ == '__main__':
     parser.add_argument('--dev_id', type=int, default=0, help='tpu card id')
     parser.add_argument('--input', type=str, default='../datasets/cali_set_det', help='input image directory path')
     parser.add_argument("--batch_size", type=int, default=1, help='img num for a ppocr system process launch.')
+    parser.add_argument("--save_draw", action='store_true', help='save visualize results')
     # params for text detector
     parser.add_argument('--cvimodel_det', type=str, default='../models/ch_PP-OCRv3_det_infer.onnx', help='detector cvimodel path')
     parser.add_argument('--det_limit_side_len', type=int, default=[640])

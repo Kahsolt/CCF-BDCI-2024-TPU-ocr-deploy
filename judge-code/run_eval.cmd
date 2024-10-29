@@ -33,6 +33,30 @@ python ppocr_sys_opencv_cvi.py ^
   --char_dict_path %DATA_PATH%\ppocr_keys_v1.txt ^
   --use_angle_cls
 
+python ppocr_sys_opencv_cvi.py ^
+  --input=%DATA_PATH%\train_full_images_0 ^
+  --cvimodel_det=%MODEL_PATH%\ch_PP-OCRv3_det_infer.onnx ^
+  --cvimodel_rec=%MODEL_PATH%\ch_PP-OCRv3_rec_infer.onnx ^
+  --batch_size=1 ^
+  --img_size [[320,48]] ^
+  --char_dict_path %DATA_PATH%\ppocr_keys_v1.txt
+
+python ppocr_sys_opencv_cvi.py ^
+  --input=%DATA_PATH%\train_full_images_0 ^
+  --cvimodel_det=%MODEL_PATH%\ch_PP-OCRv3_det_infer.onnx ^
+  --cvimodel_rec=%MODEL_PATH%\ch_PP-OCRv2_rec_infer.onnx ^
+  --batch_size=1 ^
+  --img_size [[320,32]] ^
+  --char_dict_path %DATA_PATH%\ppocr_keys_v1.txt
+
+python ppocr_sys_opencv_cvi.py ^
+  --input=%DATA_PATH%\train_full_images_0 ^
+  --cvimodel_det=%MODEL_PATH%\ch_ppocr_mobile_v2.0_det_infer.onnx ^
+  --cvimodel_rec=%MODEL_PATH%\ch_ppocr_mobile_v2.0_rec_infer.onnx ^
+  --batch_size=1 ^
+  --img_size [[640,48]] ^
+  --char_dict_path %DATA_PATH%\ppocr_keys_v1.txt
+
 python eval_score.py ^
   --gt_path %DATA_PATH%\train_full_images.json ^
   --result_json ./results/ppocr_system_results_b1.json ^

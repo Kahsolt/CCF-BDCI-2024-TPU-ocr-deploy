@@ -30,6 +30,10 @@ class PPOCRv2Cls:
         logging.info('using model {}'.format(model_path))
         # self.net = sail.Engine(model_path, args.dev_id, sail.IOMode.SYSIO)
         self.net = ort.InferenceSession(model_path)
+        node_input = self.net.get_inputs()[0]
+        node_output = self.net.get_outputs()[0]
+        print(f'>> [input] name: {node_input.name}, shape: {node_input.shape}')
+        print(f'>> [output] name: {node_output.name}, shape: {node_output.shape}')
         self.graph_name = 'ch_PP-OCRv3_cls'
         self.input_name = 'x'
         self.input_shape = [1, 3, 48, 640]

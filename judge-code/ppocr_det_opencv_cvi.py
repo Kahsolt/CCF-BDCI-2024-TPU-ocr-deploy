@@ -24,70 +24,50 @@ import onnxruntime as ort
 
 
 class DBPostProcess:
-    """
-    The post process for Differentiable Binarization (DB).
-    """
 
-    def __init__(self, thresh=0.3, box_thresh=0.6, max_candidates=1000, unclip_ratio=1.5, use_dilation=False, score_mode="fast", **kwargs):
-        assert score_mode in ["slow", "fast"], "Score mode must be in [slow, fast] but got: {}".format(score_mode)
-
+    def __init__(self, thresh=0.3, box_thresh=0.6, max_candidates=1000, unclip_ratio=1.5):
         self.thresh = thresh
         self.box_thresh = box_thresh
         self.max_candidates = max_candidates
         self.unclip_ratio = unclip_ratio
         self.min_size = 3
-        self.score_mode = score_mode
-        self.dilation_kernel = None if not use_dilation else np.asarray([[1, 1], [1, 1]])
 
-    def boxes_from_bitmap(self, pred, bitmap, dest_width, dest_height):
+    def boxes_from_bitmap(self, bitmap, dest_width, dest_height):
         ''' bitmap: single map with shape (1, H, W), whose values are binarized as {0, 1} '''
-
         height, width = bitmap.shape
-        outs = cv2.findContours((bitmap * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        if len(outs) == 3:
-            img, contours, _ = outs[0], outs[1], outs[2]
-        elif len(outs) == 2:
-            contours, _ = outs[0], outs[1]
+        contours = cv2.findContours(bitmap, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[0]
         num_contours = min(len(contours), self.max_candidates)
         boxes = []
-        scores = []
-        for index in range(num_contours):
-            contour = contours[index]
+        for i in range(num_contours):
+            contour = contours[i]
             points, sside = self.get_mini_boxes(contour)
-            if sside < self.min_size:
-                continue
-            points = np.asarray(points)
-            if self.score_mode == "fast":
-                score = self.box_score_fast(pred, points.reshape(-1, 2))
-            else:
-                score = self.box_score_slow(pred, contour)
+            if sside < self.min_size: continue
+            score = self.box_score_fast(bitmap, points)
             #print("score:", score)
-            if self.box_thresh > score or score > 2:
-                continue
+            if score < self.box_thresh or score > 2: continue       # FIXME: why >2, what case?
             box = self.unclip(points).reshape(-1, 1, 2)
             box, sside = self.get_mini_boxes(box)
-            if sside < self.min_size + 2:
-                continue
-            box = np.asarray(box)
+            if sside < self.min_size + 2: continue
             box[:, 0] = np.clip(np.round(box[:, 0] / width  * dest_width),  0, dest_width)
             box[:, 1] = np.clip(np.round(box[:, 1] / height * dest_height), 0, dest_height)
             boxes.append(box)
-            scores.append(score)
-        return np.asarray(boxes, dtype=np.int16), scores
+        return np.asarray(boxes, dtype=np.int32)
 
-    def unclip(self, box):
-        unclip_ratio = self.unclip_ratio
-        poly = Polygon(box)
-        distance = poly.area * unclip_ratio / poly.length
+    def unclip(self, box:ndarray):
+        # 扩展 box 为新的 contour
         offset = pyclipper.PyclipperOffset()
         offset.AddPath(box, pyclipper.JT_ROUND, pyclipper.ET_CLOSEDPOLYGON)
-        expanded = np.asarray(offset.Execute(distance))
-        return expanded
+        poly = Polygon(box)
+        distance = poly.area * self.unclip_ratio / poly.length
+        expanded = offset.Execute(distance)
+        return np.asarray(expanded, dtype=np.int32)
 
     def get_mini_boxes(self, contour):
+        # 最小外接矩形 (带旋转)
         bounding_box = cv2.minAreaRect(contour)
-        points = sorted(list(cv2.boxPoints(bounding_box)), key=lambda x: x[0])
+        points = sorted(list(cv2.boxPoints(bounding_box)), key=tuple)
 
+        # 保证顺序: ↖ ↙ ↘ ↗
         index_1, index_2, index_3, index_4 = 0, 1, 2, 3
         if points[1][1] > points[0][1]:
             index_1 = 0
@@ -101,60 +81,35 @@ class DBPostProcess:
         else:
             index_2 = 3
             index_3 = 2
-
         box = [points[index_1], points[index_2], points[index_3], points[index_4]]
-        return box, min(bounding_box[1])
+        return np.asarray(box, dtype=np.int32), min(bounding_box[1])
 
-    def box_score_fast(self, bitmap, _box):
-        '''
-        box_score_fast: use bbox mean score as the mean score
-        '''
+    def box_score_fast(self, bitmap:ndarray, box:ndarray):
+        ''' box_score_fast: use bbox mean score as the mean score '''
         h, w = bitmap.shape[:2]
-        box = _box.copy()
-        xmin = np.clip(np.floor(box[:, 0].min()).astype(np.int32), 0, w - 1)
-        xmax = np.clip(np.ceil (box[:, 0].max()).astype(np.int32), 0, w - 1)
-        ymin = np.clip(np.floor(box[:, 1].min()).astype(np.int32), 0, h - 1)
-        ymax = np.clip(np.ceil (box[:, 1].max()).astype(np.int32), 0, h - 1)
-
+        # 旋转框
+        box = box.copy()
+        xmin = np.clip(box[:, 0].min(), 0, w - 1)
+        xmax = np.clip(box[:, 0].max(), 0, w - 1)
+        ymin = np.clip(box[:, 1].min(), 0, h - 1)
+        ymax = np.clip(box[:, 1].max(), 0, h - 1)
+        # 旋转框的正外接矩形
         mask = np.zeros((ymax - ymin + 1, xmax - xmin + 1), dtype=np.uint8)
-        box[:, 0] = box[:, 0] - xmin
-        box[:, 1] = box[:, 1] - ymin
-        cv2.fillPoly(mask, box.reshape(1, -1, 2).astype(np.int32), 1)
-        return cv2.mean(bitmap[ymin:ymax + 1, xmin:xmax + 1], mask)[0]
-
-    def box_score_slow(self, bitmap, contour):
-        '''
-        box_score_slow: use polyon mean score as the mean score
-        '''
-        h, w = bitmap.shape[:2]
-        contour = contour.copy()
-        contour = np.reshape(contour, (-1, 2))
-
-        xmin = np.clip(np.min(contour[:, 0]), 0, w - 1)
-        xmax = np.clip(np.max(contour[:, 0]), 0, w - 1)
-        ymin = np.clip(np.min(contour[:, 1]), 0, h - 1)
-        ymax = np.clip(np.max(contour[:, 1]), 0, h - 1)
-        mask = np.zeros((ymax - ymin + 1, xmax - xmin + 1), dtype=np.uint8)
-
-        contour[:, 0] = contour[:, 0] - xmin
-        contour[:, 1] = contour[:, 1] - ymin
-
-        cv2.fillPoly(mask, contour.reshape(1, -1, 2).astype(np.int32), 1)
+        box[:, 0] -= xmin
+        box[:, 1] -= ymin
+        cv2.fillPoly(mask, box.reshape(1, -1, 2), 1)
+        # 外接矩形对应原图位置
         return cv2.mean(bitmap[ymin:ymax + 1, xmin:xmax + 1], mask)[0]
 
     def __call__(self, outs_dict, shape_list):
-        pred = outs_dict['maps']
-        pred = pred[:, 0, :, :]     # [B, C, H, W] => [B, H, W]
-        segmentation = pred > self.thresh
+        pred = outs_dict['maps'][:, 0, :, :]  # [B, C=1, H, W] => [B, H, W]
+        segmentation = (pred > self.thresh).astype(np.uint8)    # binarize
 
         boxes_batch = []
-        for batch_index in range(pred.shape[0]):
-            src_h, src_w, ratio_h, ratio_w = shape_list[batch_index]
-            if self.dilation_kernel is not None:
-                mask = cv2.dilate(np.asarray(segmentation[batch_index]).astype(np.uint8), self.dilation_kernel)
-            else:
-                mask = segmentation[batch_index]
-            boxes, scores = self.boxes_from_bitmap(pred[batch_index], mask, src_w, src_h)
+        for i in range(pred.shape[0]):
+            src_h, src_w = shape_list[i]
+            mask = segmentation[i]
+            boxes = self.boxes_from_bitmap(mask, src_w, src_h)
             boxes_batch.append({'points': boxes})
         return boxes_batch
 
@@ -167,17 +122,22 @@ class PPOCRv2Det:
         logging.info("using model {}".format(model_path))
         # self.net = sail.Engine(model_path, args.dev_id, sail.IOMode.SYSIO)
         self.net = ort.InferenceSession(model_path)
+        node_input = self.net.get_inputs()[0]
+        node_output = self.net.get_outputs()[0]
+        print(f'>> [input] name: {node_input.name}, shape: {node_input.shape}')
+        print(f'>> [output] name: {node_output.name}, shape: {node_output.shape}')
         self.graph_name = 'ch_PP-OCRv3_det'
         self.input_name = 'x'
         self.input_shape = [1, 3, 640, 640]
         self.det_batch_size = 1
         logging.info("load cvimodel success!")
         # preprocess
-        self.det_limit_side_len = sorted([self.input_shape[2], self.input_shape[3]])
-        self.mean  = np.asarray([0.485,   0.456,   0.406])  .reshape((1, 1, 3)).astype(np.float32) * 255.0
-        self.scale = np.asarray([1/0.229, 1/0.224, 1/0.225]).reshape((1, 1, 3)).astype(np.float32) / 255.0
+        self.input_size_level = sorted([self.input_shape[2], self.input_shape[3]])
+        self.mean  = np.asarray([0.485,   0.456,   0.406  ], dtype=np.float32).reshape((1, 1, 3)) * 255.0
+        self.scale = np.asarray([1/0.229, 1/0.224, 1/0.225], dtype=np.float32).reshape((1, 1, 3)) / 255.0
         # postprocess
-        self.postprocess_op = DBPostProcess(thresh=0.3, box_thresh=0.6, max_candidates=1000, unclip_ratio=1.5, use_dilation=False, score_mode="fast")
+        self.postprocess_op = DBPostProcess()
+        self.min_size = self.postprocess_op.min_size
         # perfcnt
         self.preprocess_time  = 0.0
         self.inference_time   = 0.0
@@ -187,13 +147,13 @@ class PPOCRv2Det:
         # 小图不放大，大图等比例缩小到模型输入上限
         h, w, _ = im.shape
         size_max = max(h, w)
-        if size_max >= self.det_limit_side_len[-1]:
-            limit_side_len = self.det_limit_side_len[-1]
-            ratio = float(limit_side_len) / size_max
+        if size_max >= self.input_size_level[-1]:
+            canvas_size = self.input_size_level[-1]
+            ratio = float(canvas_size) / size_max
         else:
-            for side_len in self.det_limit_side_len:
+            for side_len in self.input_size_level:
                 if size_max <= side_len:
-                    limit_side_len = side_len
+                    canvas_size = side_len
                     ratio = 1.
                     break
         resize_h = int(h * ratio)
@@ -210,9 +170,9 @@ class PPOCRv2Det:
         im = im.transpose(2, 0, 1)
 
         # right bottom pad 0
-        im_pad = np.zeros((3, limit_side_len, limit_side_len), dtype=np.float32)
+        im_pad = np.zeros((3, canvas_size, canvas_size), dtype=np.float32)
         im_pad[:, :resize_h, :resize_w] = im
-        return im_pad, [h, w, resize_h, resize_w]
+        return im_pad, (h, w, resize_h, resize_w)
 
     def predict(self, x):
         # [B, C, H, W], logits
@@ -221,14 +181,14 @@ class PPOCRv2Det:
     def postprocess(self, outputs, src_h, src_w, resize_h, resize_w):
         preds = {}
         preds['maps'] = np.expand_dims(outputs[:, :resize_h, :resize_w], axis=0)
-        shape_list = np.asarray([[src_h, src_w, resize_h / float(src_h), resize_w / float(src_w)]])
+        shape_list = np.asarray([[src_h, src_w]])
         post_result = self.postprocess_op(preds, shape_list)
         dt_boxes = post_result[0]['points']
-        # print('dt_boxes:', dt_boxes)
-        dt_boxes = self.filter_tag_det_res(dt_boxes, (src_h, src_w, 3))
+        #print('dt_boxes:', dt_boxes)
+        #dt_boxes = self.filter_tag_det_res(dt_boxes, (src_h, src_w, 3))
         return dt_boxes
 
-    def filter_tag_det_res(self, dt_boxes, image_shape):
+    def filter_tag_det_res(self, dt_boxes:ndarray, image_shape:tuple) -> ndarray:
         img_height, img_width = image_shape[:2]
         dt_boxes_new = []
         for box in dt_boxes:
@@ -236,12 +196,12 @@ class PPOCRv2Det:
             box = self.clip_det_res(box, img_height, img_width)
             rect_width  = int(np.linalg.norm(box[0] - box[1]))
             rect_height = int(np.linalg.norm(box[0] - box[3]))
-            if rect_width <= 3 or rect_height <= 3:
+            if rect_width <= self.min_size or rect_height <= self.min_size:
                 continue
             dt_boxes_new.append(box)
-        return np.asarray(dt_boxes_new)
+        return np.asarray(dt_boxes_new, dtype=dt_boxes.dtype)
 
-    def order_points_clockwise(self, pts):
+    def order_points_clockwise(self, pts:ndarray) -> ndarray:
         """
         reference from: https://github.com/jrosebr1/imutils/blob/master/imutils/perspective.py
         # sort the points based on their x-coordinates
@@ -256,12 +216,12 @@ class PPOCRv2Det:
         # points, respectively
         (tl, bl) = leftMost [np.argsort(leftMost [:, 1]), :]
         (tr, br) = rightMost[np.argsort(rightMost[:, 1]), :]
-        return np.asarray([tl, tr, br, bl], dtype=np.float32)
+        return np.asarray([tl, tr, br, bl], dtype=pts.dtype)
 
     def clip_det_res(self, points, img_height, img_width):
-        for pno in range(points.shape[0]):
-            points[pno, 0] = int(min(max(points[pno, 0], 0), img_width - 1))
-            points[pno, 1] = int(min(max(points[pno, 1], 0), img_height - 1))
+        for p in points:
+            p[0] = int(min(max(p[0], 0), img_width  - 1))
+            p[1] = int(min(max(p[1], 0), img_height - 1))
         return points
 
     def __call__(self, img_list:List[ndarray]):
@@ -303,11 +263,11 @@ class PPOCRv2Det:
 
 
 def draw_text_det_res(dt_boxes, img_path):
-    src_im = cv2.imread(img_path)
+    im = cv2.imread(img_path)
     for box in dt_boxes:
-        box = np.asarray(box).astype(np.int32).reshape(-1, 2)
-        cv2.polylines(src_im, [box], True, color=(255, 255, 0), thickness=2)
-    return src_im
+        box = np.asarray(box, dtype=np.int32).reshape(-1, 2)
+        cv2.polylines(im, [box], True, color=(255, 255, 0), thickness=2)
+    return im
 
 
 def main(opt):
