@@ -14,6 +14,7 @@ DISTRO_PATH=$BASE_PATH/tpu-sdk-cv180x-ocr/cvimodels
 MODEL_NAME=chocr_rec
 MODEL_DEF=$BASE_PATH/models/crnn_lite_lstm.onnx
 DTYPE=bf16
+#DTYPE=int8
 INPUT_SHAPE='[[1,3,32,320]]'
 OUTPUT_SHAPE='[[64,1,5531]]'
 MEAN=127.5,127.5,127.5
@@ -41,6 +42,7 @@ model_transform.py \
   --keep_aspect_ratio \
   --test_input $TEST_INPUT \
   --test_result $TEST_RESULT \
+  --debug \
   --mlir $MLIR_MODEL_FILE
 fi
 if [ ! -f $CALI_TABLE_FILE ]; then
@@ -65,6 +67,7 @@ model_deploy.py \
   --customization_format BGR_PACKED \
   --ignore_f16_overflow \
   --op_divide \
+  --debug \
   --model $CVI_MODEL_FILE
 fi
 if [ -f $CVI_MODEL_FILE ]; then

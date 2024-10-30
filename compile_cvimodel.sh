@@ -72,6 +72,7 @@ model_transform.py \
   --keep_aspect_ratio \
   --test_input $TEST_INPUT \
   --test_result $TEST_RESULT \
+  --debug \
   --mlir $MLIR_MODEL_FILE
 fi
 if [ ! -f $CALI_TABLE_FILE ]; then
@@ -94,6 +95,7 @@ model_deploy.py \
   --fuse_preprocess \
   --customization_format BGR_PACKED \
   --ignore_f16_overflow \
+  --debug \
   --model $CVI_MODEL_FILE
 fi
 if [ -f $CVI_MODEL_FILE ]; then
