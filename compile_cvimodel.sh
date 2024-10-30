@@ -90,7 +90,7 @@ model_deploy.py \
   --calibration_table $CALI_TABLE_FILE \
   --test_input $TEST_INPUT \
   --test_reference $TEST_RESULT \
-  --tolerance 0.45,0.40 \
+  --tolerance 0.85,0.45 \
   --fuse_preprocess \
   --customization_format BGR_PACKED \
   --ignore_f16_overflow \
