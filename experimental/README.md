@@ -31,14 +31,14 @@
 ### 任务列表
 
 - [*] 跑通各开源项目的推理 [run_repo_infer.cmd](./run_repo_infer.cmd)
-- [ ] 跑通官方样例工程 [ppocr](/ppocr) (这个需要在板子上跑😈)
-- [ ] 部署 & 性能测试官方样例工程
-- [ ] 板子的基准性能测试
-- [ ] 尝试迁移其他开源模型
-  - [ ] ppocr v4
-  - [ ] ppocr v3
-  - [ ] ppocr v2 (good!)
-  - [ ] chineseocr_lite (good!)
+- [*] 跑通官方样例工程 [ppocr](/ppocr) (这个需要在板子上跑😈)
+- [*] 部署 & 性能测试官方样例工程
+- [*] 板子的基准性能测试
+- [*] 尝试迁移其他开源模型
+  - [*] ppocr v4
+  - [*] ppocr v3
+  - [*] ppocr v2 (good!)
+  - [*] chineseocr_lite (good!)
 
 
 ### 模型选型

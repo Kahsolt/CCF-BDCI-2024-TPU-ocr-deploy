@@ -12,8 +12,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
-from xutils import PP_DATA_PATH, REPO_PATH
-assert PP_DATA_PATH.is_dir(), '>> You should first download https://paddleocr.bj.bcebos.com/dygraph_v2.1/ppocr_img.zip'
+from xutils import BASE_PATH, DATA_PATH, REPO_PATH
 
 
 def run_ppocr(img_path:Path):
@@ -33,7 +32,7 @@ def run_ppocr(img_path:Path):
   from paddleocr.tools.infer.predict_cls import TextClassifier
   from paddleocr.tools.infer.predict_rec import TextRecognizer
 
-  font_path = PP_DATA_PATH / 'fonts/simfang.ttf'
+  font_path = DATA_PATH / 'fonts/simfang.ttf'
 
   ocr = PaddleOCR(
     # version
@@ -198,10 +197,7 @@ def run_chineseocr_lite(img_path:Path):
 
 
 if __name__ == '__main__':
-  #img_path = PP_DATA_PATH / 'imgs/1.jpg'
-  img_path = PP_DATA_PATH / 'imgs/11.jpg'
-  #img_path = PP_DATA_PATH / 'imgs/12.jpg'
-  #img_path = PP_DATA_PATH / 'imgs/00207393.jpg'
+  img_path = DATA_PATH / 'train_full_images_0' / 'gt_97.jpg'
 
   parser = ArgumentParser()
   parser.add_argument('-K', '--backend',  default='ppocr', choices=['ppocr', 'cnocr', 'rapidocr', 'chineseocr_lite'])

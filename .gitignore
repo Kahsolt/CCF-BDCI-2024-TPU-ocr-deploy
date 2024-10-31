@@ -10,16 +10,9 @@ datasets/*
 downloads/*
 !downloads/*.cmd
 
-# sdk & cross-compile stuff
+# sdk
 tpu-mlir/
-duo-sdk/
-sophon-sail/
-cviruntime/
-tpu-sdk-cv180x/
 tpu-sdk-cv180x-ocr/
-build_sophon_sail/*
-!build_sophon_sail/*.sh
-!build_sophon_sail/*.cmake
 
 # generated
 results/
@@ -28,6 +21,3 @@ tmp/
 # logs
 log/
 *.log
-
-# lprof
-*.lprof

@@ -4,6 +4,8 @@
 
 ----
 
+ℹ 本仓库部署 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 项目到 [MilkV-Duo](https://milkv.io/zh/duo) 板上运行
+
 Contest page: https://www.datafountain.cn/competitions/1044  
 Team Name: 识唔识得  
 
@@ -15,7 +17,7 @@ Team Name: 识唔识得
 - `downloads\download.cmd`
 - `git clone https://github.com/Kahsolt/tpu-sdk-cv180x-ocr`
 
-⚪ 上位机 (模型编译)
+⚪ 上位机 (模型编译, 本仓库!)
 
 ℹ 可跳过，直接使用我预编译的模型 [tpu-sdk-cv180x-ocr/cvimodels](./tpu-sdk-cv180x-ocr/cvimodels/)  
 
@@ -23,17 +25,11 @@ Team Name: 识唔识得
   - `pip install -r requirements.txt`
   - run `models\download_and_convert.cmd`
 - 编译模型文件: onnx -> cvimodel (run in Docker container [tpu-mlir](./run_docker.cmd))
-  - `bash ./convert_cvimodel.sh det v3`
-  - `bash ./convert_cvimodel.sh rec v3`
-  - `bash ./convert_cvimodel.sh cls mb`
+  - `bash ./compile_cvimodel_all.sh`
 
-⚪ 上位机 (运行时编译)
+⚪ 上位机 (运行时编译, 子仓库 tpu-sdk-cv180x-ocr)
 
 ℹ 可跳过，直接使用我预编译的运行时 [tpu-sdk-cv180x-ocr/samples/ppocr_*](./tpu-sdk-cv180x-ocr/samples/)
-
-- 参考各子项目的说明文件 `tpu-sdk-cv180x-ocr/samples/ppocr_*/README.md`
-
-⚪ 板子 (跑推理！)
 
 - 参考各子项目的说明文件 `tpu-sdk-cv180x-ocr/samples/ppocr_*/README.md`
 
@@ -42,8 +38,6 @@ Team Name: 识唔识得
 
 - https://github.com/Kahsolt/MilkV-Duo-init
 - https://github.com/Kahsolt/tpu-sdk-cv180x-ocr
-- https://github.com/sophgo/sophon-sail
-- https://github.com/sophgo/cviruntime
 - https://community.milkv.io/t/duo-linux-fdisk-resize2fs-root/42
   - 板上TF卡分区扩容，参考，记得分区不能太大！（1.5G 安全）
 - https://github.com/ZhangGe6/onnx-modifier

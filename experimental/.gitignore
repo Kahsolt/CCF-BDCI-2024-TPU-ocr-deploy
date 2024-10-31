@@ -3,7 +3,7 @@
 __pycache__/
 
 # data
-data/
+ppocr_img/
 
 # repo
 repo/*
@@ -11,6 +11,3 @@ repo/*
 
 # generated
 output/
-
-# lprof
-*.lprof

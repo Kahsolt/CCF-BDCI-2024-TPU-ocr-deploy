@@ -12,13 +12,12 @@ from tqdm import tqdm
 from shapely.geometry import Polygon
 
 BASE_PATH = Path(__file__).parent
-DATA_PATH = BASE_PATH / 'data'
 REPO_PATH = BASE_PATH / 'repo'
 IMG_PATH = BASE_PATH / 'img'
 OUT_PATH = BASE_PATH / 'output'
 DEMO_PATH = BASE_PATH / 'ppocr'
-PP_DATA_PATH = DATA_PATH/ 'ppocr_img'
-DEFAULT_INPUT_FOLDER = BASE_PATH.parent / 'datasets' / 'train_full_images_0'
+DATA_PATH = BASE_PATH.parent / 'datasets'
+DEFAULT_INPUT_FOLDER = DATA_PATH / 'train_full_images_0'
 DEFAULT_SAVE_FILE = OUT_PATH / 'val.json'
 LABEL_FILE = DATA_PATH / 'train_full_labels.json'
 PROCESSED_LABEL_FILE = LABEL_FILE.with_suffix('.jsonl')
