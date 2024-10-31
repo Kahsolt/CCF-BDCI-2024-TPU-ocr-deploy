@@ -11,15 +11,15 @@ source ./tpu-mlir/envsetup.sh
 [ ! -d tpu-sdk-cv180x-ocr ] && git clone -q https://github.com/Kahsolt/tpu-sdk-cv180x-ocr
 DISTRO_PATH=$BASE_PATH/tpu-sdk-cv180x-ocr/cvimodels
 
+# [bf16, int8]
+DTYPE=${1:-'bf16'}
+
 MODEL_NAME=chocr_rec
 MODEL_DEF=$BASE_PATH/models/crnn_lite_lstm.onnx
-DTYPE=bf16
-#DTYPE=int8
 INPUT_SHAPE='[[1,3,32,320]]'
-OUTPUT_SHAPE='[[64,1,5531]]'
 MEAN=127.5,127.5,127.5
 SCALE=0.0078125,0.0078125,0.0078125
-CALI_DATASET=$BASE_PATH/datasets/cali_set_rec
+CALI_DATASET=$BASE_PATH/datasets/cali_set_rec_32x320
 TEST_INPUT=$CALI_DATASET/crop_9.jpg
 
 # predefine all generated filenames
@@ -78,6 +78,7 @@ else
 fi
 
 echo ">> Save model to $CVI_MODEL_FILE the runtime repo"
+cp -u $CVI_MODEL_FILE $DISTRO_PATH
 model_tool --info $CVI_MODEL_FILE > $DISTRO_PATH/$CVI_INFO_FILE
 
 echo ">> Upload model $CVI_MODEL_FILE to MilkV-Duo!"

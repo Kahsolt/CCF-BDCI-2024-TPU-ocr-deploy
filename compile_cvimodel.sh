@@ -5,8 +5,6 @@
 # - https://doc.sophgo.com/sdk-docs/v23.09.01-lts/docs_latest_release/docs/tpu-mlir/developer_manual/html/03_user_interface.html
 # - https://tpumlir.org/docs/quick_start/07_fuse_preprocess.html
 
-# TODO: model_deploy.py --op_divide
-
 BASE_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 
 # tpu-mlir compile tools
@@ -37,7 +35,7 @@ else    # rec & cls
   INPUT_SHAPE='[[1,3,48,640]]'
   MEAN=127.5,127.5,127.5
   SCALE=0.0078125,0.0078125,0.0078125
-  CALI_DATASET=$BASE_PATH/datasets/cali_set_rec
+  CALI_DATASET=$BASE_PATH/datasets/cali_set_rec_48x640
   TEST_INPUT=$CALI_DATASET/crop_9.jpg
   ONNX_FILE_SUFFIX=.modify
 fi
@@ -50,6 +48,10 @@ if [ "$VERSION" == "mb" ]; then
 else
   MODEL_NAME=ppocr${VERSION}_${TASK}
   MODEL_DEF=$BASE_PATH/models/ch_PP-OCR${VERSION}_${TASK}_infer${ONNX_FILE_SUFFIX}.onnx
+fi
+COMPARE_ALL=--compare_all
+if [ "$TASK" == "det" ] && [ "$VERSION" == "v3" ]; then
+  COMPARE_ALL=
 fi
 
 # predefine all generated filenames
@@ -92,9 +94,11 @@ model_deploy.py \
   --test_input $TEST_INPUT \
   --test_reference $TEST_RESULT \
   --tolerance 0.85,0.45 \
+  $COMPARE_ALL \
   --fuse_preprocess \
   --customization_format BGR_PACKED \
   --ignore_f16_overflow \
+  --op_divide \
   --debug \
   --model $CVI_MODEL_FILE
 fi
@@ -111,6 +115,7 @@ fi
 #  --output $TEST_RESULT
 
 echo ">> Save model to $CVI_MODEL_FILE the runtime repo"
+cp -u $CVI_MODEL_FILE $DISTRO_PATH
 model_tool --info $CVI_MODEL_FILE > $DISTRO_PATH/$CVI_INFO_FILE
 
 echo ">> Upload model $CVI_MODEL_FILE to MilkV-Duo!"
