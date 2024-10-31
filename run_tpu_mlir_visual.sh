@@ -18,23 +18,9 @@ pushd tmp > /dev/null
 #  -p 10000 \
 #  --debug
 
-#visual.py \
-#  --f32_mlir ppocr_mb_rec.mlir \
-#  --quant_mlir ppocr_mb_rec_cv180x_bf16_tpu.mlir \
-#  --input $BASE_PATH/datasets/cali_set_rec/crop_177.jpg \
-#  -p 10000 \
-#  --debug
-
-#visual.py \
-#  --f32_mlir chocr_rec.mlir \
-#  --quant_mlir chocr_rec_cv180x_int8_sym_tpu.mlir \
-#  --input $BASE_PATH/datasets/cali_set_rec/crop_177.jpg \
-#  -p 10000 \
-#  --debug
-
 visual.py \
-  --f32_mlir chocr_rec.mlir \
-  --quant_mlir chocr_rec_cv180x_bf16_tpu.mlir \
+  --f32_mlir ppocr_mb_rec.mlir \
+  --quant_mlir ppocr_mb_rec_cv180x_bf16_tpu.mlir \
   --input $BASE_PATH/datasets/cali_set_rec/crop_177.jpg \
   -p 10000 \
   --debug

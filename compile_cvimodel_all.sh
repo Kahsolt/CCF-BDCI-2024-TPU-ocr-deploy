@@ -23,8 +23,6 @@
 # | det-mb-int8    | --tolerance 0.85,0.45 --compare_all |
 # | cls-mb-int8    | --tolerance 0.85,0.45 --compare_all |
 # | rec-mb-bf16    | --tolerance 0.85,0.45 --compare_all |
-# | chocr-rec-bf16 | --tolerance 0.85,0.45 --compare_all |
-# | chocr-rec-int8 | --tolerance 0.85,0.45 --compare_all |
 
 # rec/cls 模型常规量化到 INT8
 bash ./compile_cvimodel.sh det v4 int8
@@ -35,8 +33,6 @@ bash ./compile_cvimodel.sh cls mb int8
 
 # rec 模型用 BF16 更加保险
 bash ./compile_cvimodel.sh rec mb bf16
-bash ./compile_cvimodel_chocr_rec.sh bf16
-bash ./compile_cvimodel_chocr_rec.sh int8
 
 # 对不起做不到
 #bash ./compile_cvimodel.sh rec v4 bf16         # model too large
