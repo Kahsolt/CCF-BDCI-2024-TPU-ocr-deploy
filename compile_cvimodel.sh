@@ -32,10 +32,10 @@ if [ "$TASK" == "det" ] || [ "$TASK" == "det_prune" ]; then
   CALI_DATASET=$BASE_PATH/datasets/cali_set_det
   TEST_INPUT=$CALI_DATASET/gt_97.jpg
 else    # rec & cls
-  INPUT_SHAPE='[[1,3,48,640]]'
+  INPUT_SHAPE='[[1,3,32,320]]'
   MEAN=127.5,127.5,127.5
   SCALE=0.0078125,0.0078125,0.0078125
-  CALI_DATASET=$BASE_PATH/datasets/cali_set_rec_48x640
+  CALI_DATASET=$BASE_PATH/datasets/cali_set_rec_32x320
   TEST_INPUT=$CALI_DATASET/crop_9.jpg
   ONNX_FILE_SUFFIX=.modify
 fi
