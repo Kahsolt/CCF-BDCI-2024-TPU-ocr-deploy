@@ -6,27 +6,27 @@
 我们把这套代码改造为以 onnx 为后端，来方便把它的前后处理部分迁移为 C++ 代码 (跑 cvimodel 需要的 cviruntime 是 C++)
 
 
-评测结果 (`eval_score.py`):
+⚪ 模型评测结果 (CPU + onnx)
 
 ```
-[ppocrv4 (no cls)]
+[ppocrv4]
   Inference time: 76.05
   F-score: 0.60724, Precision: 0.78855, Recall: 0.49372
 [ppocrv3]
-  Inference time: 62.15
-  F-score: 0.57585, Precision: 0.80885, Recall: 0.44707
-[ppocrv3 (no cls)]
   Inference time: 58.68
-  F-score: 0.57585, Precision: 0.80885, Recall: 0.44707  (rec_shape: [48,640])
-  F-score: 0.57360, Precision: 0.80604, Recall: 0.44522  (rec_shape: [48,640])
-  F-score: 0.56903, Precision: 0.79927, Recall: 0.44177  (rec_shape: [48,320])
-[ppocrv3-2 (v3 det + v2 rec)]
-  Inference time: 
+  F-score: 0.57585, Precision: 0.80885, Recall: 0.44707
+  F-score: 0.57360, Precision: 0.80604, Recall: 0.44522
+[ppocrv2]
+  Inference time: 43.02
+  F-score: 0.52051, Precision: 0.78323, Recall: 0.38977
+[ppocr_mb]
+  Inference time: 41.61
+  F-score: 0.34883, Precision: 0.69257, Recall: 0.23312
 
-[ppocrv2 (no cls)]
-  Inference time: 54.55
-  F-score: 0.08174, Precision: 0.37194, Recall: 0.04591
-[ppocr_mb (no cls)]
-  Inference time: 48.60
-  F-score: 0.03312, Precision: 0.40547, Recall: 0.01726
+[ppocr v3_det + mb_rec]
+  Inference time: 58.13
+  F-score: 0.54064, Precision: 0.79092, Recall: 0.41069
+[ppocr v2_det + mb_rec]
+  Inference time: 41.59
+  F-score: 0.49098, Precision: 0.78041, Recall: 0.35815
 ```

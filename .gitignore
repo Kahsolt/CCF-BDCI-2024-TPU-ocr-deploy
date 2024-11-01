@@ -17,8 +17,8 @@ tpu-sdk-cv180x-ocr/
 # cvimodel build
 build/
 
-# generated predict
-results/
+# raw predict
+results/*.txt
 
 # logs
 log/

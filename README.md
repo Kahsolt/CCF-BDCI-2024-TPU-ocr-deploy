@@ -4,10 +4,24 @@
 
 ----
 
-ℹ 本仓库部署 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 项目到 [MilkV-Duo](https://milkv.io/zh/duo) 板上运行
-
 Contest page: https://www.datafountain.cn/competitions/1044  
 Team Name: 识唔识得  
+
+
+ℹ 本仓库部署 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 项目到 [MilkV-Duo](https://milkv.io/zh/duo) 板上运行
+
+### 性能评估 & 对比
+
+ℹ 单元格内数值为 `f-score/precsion/recall : infer_time`
+
+| det | rec | CPU + onnx (fp32) | TPU + cvimodel (int8 + bf16) |
+| :-: | :-: | :-: | :-: |
+| v4 | v4 | 0.60724/0.78855/0.49372 : 76.05 |  |
+| v3 | v3 | 0.57585/0.80885/0.44707 : 58.68 |  |
+| v3 | mb | 0.54064/0.79092/0.41069 : 58.13 | 0.41687/0.51316/0.35100 : 468 |
+| v2 | v2 | 0.52051/0.78323/0.38977 : 43.02 |  |
+| v2 | mb | 0.49098/0.78041/0.35815 : 41.59 | 0.41318/0.56653/0.32516 : 405 |
+| mb | mb | 0.34883/0.69257/0.23312 : 41.61 | 0.32552/0.52379/0.23614 : 374 |
 
 
 ### 环境搭建

@@ -35,10 +35,10 @@ class PPOCRv2Rec:
         print(f'>> [output] name: {node_output.name}, shape: {node_output.shape}')
         self.graph_name = 'ch_PP-OCRv3_rec'
         self.input_name = 'x'
-        if 'v3' in args.cvimodel_rec or 'v4' in args.cvimodel_rec:
+        if 'v3' in model_path or 'v4' in model_path:
             self.input_shape = [1, 3, 48, 640]
         else:
-            self.input_shape = [1, 3, 32, 640]
+            self.input_shape = [1, 3, 32, 320]
         self.rec_batch_size = 1
         logging.info("load cvimodel success!")
         # hparam

@@ -82,4 +82,4 @@ if __name__ == '__main__':
     f_score, precision, recall = calculate_f_score(gt_data, result_data)
     print(f"F-score: {f_score:.5f}, Precision: {precision:.5f}, Recall: {recall:.5f}")
     print(f"Inference time: {inference_time:.5f}")
-    print(f"Score: {(min(100, 90+40*f_score-0.085*inference_time/160)):.5f}")
+    print(f"Score: {(90+40*f_score-0.085*inference_time):.5f}")
