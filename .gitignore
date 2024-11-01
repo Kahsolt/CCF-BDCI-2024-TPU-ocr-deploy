@@ -14,9 +14,11 @@ downloads/*
 tpu-mlir/
 tpu-sdk-cv180x-ocr/
 
-# generated
+# cvimodel build
+build/
+
+# generated predict
 results/
-tmp/
 
 # logs
 log/

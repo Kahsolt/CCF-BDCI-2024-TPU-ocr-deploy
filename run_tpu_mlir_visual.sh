@@ -9,7 +9,7 @@ BASE_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 [ ! -d tpu-mlir ] && git clone -q https://github.com/milkv-duo/tpu-mlir
 source ./tpu-mlir/envsetup.sh
 
-pushd tmp > /dev/null
+pushd build/ppocr_mb_rec > /dev/null
 
 #visual.py \
 #  --f32_mlir ppocrv4_det.mlir \
