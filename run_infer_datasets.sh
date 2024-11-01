@@ -54,7 +54,7 @@ nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocr_mb_det_int8.cvimo
 # run on host (Windows)
 pushd tpu-sdk-cv180x-ocr\samples\ppocr_sys_many
 scp root@192.168.42.1:/root/tpu-sdk-cv180x-ocr/samples/results.txt .
-python convert_results.py ./results.txt
+python convert_results.py .\results.txt
 MOVE .\results.json ..\..\..\results
 popd
 
