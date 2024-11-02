@@ -1,8 +1,34 @@
 ### 板上运行+评测结果
 
-⚪ ppocr_v3
+ℹ 如无特殊说明，以下实验均使用超参数 `DET_SEG_THRESH=0.5` 和 `DET_MIN_SIZE=5`  
 
-ℹ 使用超参数 `DET_SEG_THRESH=0.3` 和 `DET_MIN_SIZE=3`  
+关于评分 & 得分的讨论
+
+- 评分公式中，判为 TP 的条件是: `iou(box) > 0.5` && `strsim(txt) > 0.5` (严格大于!!)
+  - box条件相对容易达成 (det模型要求低)，txt条件不容易达成 (rec模型要求高)
+  - `v3_det + mb_rec` 和 `v2_det + mb_rec` 的得分差异虽然不大，但是前者错字率确实更低，而后者召回的框更多
+- 板上精度不容易提高的原因
+  - recall: 要求 det 模型 分割阈值低 + 预测碎片少、要求 rec 模型推理快；这两条都很难做到
+  - precision: rec 模型量化后预测就是不太好，甚至有字典外词
+- 刷分思路 & 矛盾
+  - 尽可能多召回框，每个框的文本错字率少于一半就成功！
+  - CRNN太慢了、有的框里其实没有字，为了降低板上计算量、加快推理速度，我们不得不提高阈值减少待 rec 框的数量
+
+推理时间分析
+
+- det
+  - v3: 244.60 ms/img
+  - v2: 228.71 ms/img
+  - mb: 223.63 ms/img
+- rec
+  - v2: 105.21 ms/crop
+  - mb (bf16): 33.35 ms/crop
+  - mb (mix): 18.07 ms/crop (精度很烂)
+
+----
+
+⚪ v3_det + mb_rec
+
 ⚠ 这条路线精度收益不大，可能 det 模型的预测还是太支离破碎了  
 
 ```shell
@@ -13,27 +39,27 @@ Max SharedMem size:8793600
 version: 1.4.0
 ppocr_mb_rec Build at 2024-11-01 12:56:51 For platform cv180x
 Max SharedMem size:1075360
-find shared memory(8793600),  saved:1075360 
-ts_model_load: 880.000 ms
-ts_model_unload: 109.655 ms
+find shared memory(8793600),  saved:1075360
+ts_model_load: 824.000 ms
+ts_model_unload: 118.216 ms
 ================================
 n_img:        2350
-n_crop:       15581
+n_crop:       13293
 --------------------------------
-ts_img_load:  494600.969 ms
-ts_img_crop:  78126.922 ms
-ts_det_pre:   247432.531 ms
-ts_det_infer: 579572.062 ms
-ts_det_post:  84495.453 ms
-ts_rec_pre:   21291.232 ms
-ts_rec_infer: 519631.562 ms
-ts_rec_post:  92250.250 ms
+ts_img_load:  459602.250 ms
+ts_img_crop:  72313.211 ms
+ts_det_pre:   213001.766 ms
+ts_det_infer: 574809.625 ms
+ts_det_post:  61579.309 ms
+ts_rec_pre:   18722.221 ms
+ts_rec_infer: 443212.906 ms
+ts_rec_post:  78747.188 ms
 --------------------------------
-ts_avg_pre:   114.351 ms
-ts_avg_infer: 467.746 ms
-ts_avg_post:  75.211 ms
+ts_avg_pre:   98.606 ms
+ts_avg_infer: 433.201 ms
+ts_avg_post:  59.713 ms
 ================================
-Total time:   2120964.250 ms
+Total time:   1925107.125 ms
 ```
 
 Judge score:
@@ -42,17 +68,15 @@ Judge score:
 python eval_score.py ^
   --gt_path ..\datasets\train_full_images.json ^
   --result_json ..\results\res_v3.json ^
-  --inference_time 468
-
-100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:08<00:00, 280.81it/s]
-F-score: 0.41687, Precision: 0.51316, Recall: 0.35100
-Inference time: 468.00000
-Score: 66.89474
+  --inference_time 433.201
+100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:07<00:00, 333.88it/s]
+F-score: 0.42010, Precision: 0.54821, Recall: 0.34052
+Inference time: 433.20100
+Score: 69.98178
 ```
 
-⚪ ppocr_v2
+⚪ v2_det + mb_rec/v2_rec
 
-ℹ 使用超参数 `DET_SEG_THRESH=0.5` 和 `DET_MIN_SIZE=5`
 ⚠ 这条路线争取更高的精度  
 
 ```shell
@@ -64,26 +88,26 @@ version: 1.4.0
 ppocr_mb_rec Build at 2024-11-01 12:56:51 For platform cv180x
 Max SharedMem size:1075360
 find shared memory(8179200),  saved:1075360
-ts_model_load: 709.500 ms
-ts_model_unload: 122.508 ms
+ts_model_load: 1272.000 ms
+ts_model_unload: 112.709 ms
 ================================
 n_img:        2350
 n_crop:       10963
 --------------------------------
-ts_img_load:  495171.344 ms
-ts_img_crop:  70669.398 ms
-ts_det_pre:   233599.328 ms
-ts_det_infer: 536907.812 ms
-ts_det_post:  82139.875 ms
-ts_rec_pre:   17274.988 ms
-ts_rec_infer: 366274.719 ms
-ts_rec_post:  65069.387 ms
+ts_img_load:  483269.844 ms
+ts_img_crop:  68317.258 ms
+ts_det_pre:   225042.297 ms
+ts_det_infer: 533648.875 ms
+ts_det_post:  75878.125 ms
+ts_rec_pre:   16939.449 ms
+ts_rec_infer: 365749.844 ms
+ts_rec_post:  64983.641 ms
 --------------------------------
-ts_avg_pre:   106.755 ms
-ts_avg_infer: 384.333 ms
-ts_avg_post:  62.642 ms
+ts_avg_pre:   102.971 ms
+ts_avg_infer: 382.723 ms
+ts_avg_post:  59.941 ms
 ================================
-Total time:   1870048.500 ms
+Total time:   1837247.125 ms
 
 # with dilate
 [root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel  ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
@@ -113,7 +137,67 @@ ts_avg_pre:   114.963 ms
 ts_avg_infer: 410.420 ms
 ts_avg_post:  113.425 ms
 ================================
-Total time:   2132573.750 ms
+Total time:   2132573.750  ms
+
+# with rec_mix
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel  ../cvimodels/ppocr_mb_rec_mix.cvimodel /data/train_full_images_0
+version: 1.4.0
+ppocrv2_det Build at 2024-11-01 13:47:17 For platform cv180x
+Max SharedMem size:8179200
+version: 1.4.0
+ppocr_mb_rec Build at 2024-11-01 14:33:01 For platform cv180x
+Max SharedMem size:537680
+find shared memory(8179200),  saved:537680
+ts_model_load: 632.000 ms
+ts_model_unload: 84.594 ms
+================================
+n_img:        2350
+n_crop:       10963
+--------------------------------
+ts_img_load:  499276.281 ms
+ts_img_crop:  71127.094 ms
+ts_det_pre:   231542.922 ms
+ts_det_infer: 536826.250 ms
+ts_det_post:  85935.906 ms
+ts_rec_pre:   17556.877 ms
+ts_rec_infer: 198094.734 ms
+ts_rec_post:  64833.812 ms
+--------------------------------
+ts_avg_pre:   106.000 ms
+ts_avg_infer: 312.732 ms
+ts_avg_post:  64.157 ms
+================================
+Total time:   1708340.375 ms
+
+# with v2_rec
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel  ../cvimodels/ppocrv2_rec_bf16.cvimodel /data/train_full_images_0
+version: 1.4.0
+ppocrv2_det Build at 2024-11-01 13:47:17 For platform cv180x
+Max SharedMem size:8179200
+version: 1.4.0
+ppocrv2_rec Build at 2024-11-02 22:19:55 For platform cv180x
+Max SharedMem size:1075360
+find shared memory(8179200),  saved:1075360
+ts_model_load: 1208.000 ms
+ts_model_unload: 92.979 ms
+================================
+n_img:        2350
+n_crop:       10963
+--------------------------------
+ts_img_load:  494276.375 ms
+ts_img_crop:  71197.633 ms
+ts_det_pre:   240060.234 ms
+ts_det_infer: 537510.000 ms
+ts_det_post:  86418.023 ms
+ts_rec_pre:   17251.906 ms
+ts_rec_infer: 1153406.375 ms
+ts_rec_post:  64942.500 ms
+--------------------------------
+ts_avg_pre:   109.495 ms
+ts_avg_infer: 719.539 ms
+ts_avg_post:  64.409 ms
+================================
+Total time:   2668221.000 ms
 ```
 
 Judge score:
@@ -122,11 +206,11 @@ Judge score:
 python eval_score.py ^
   --gt_path ..\datasets\train_full_images.json ^
   --result_json ..\results\res_v2.json ^
-  --inference_time 384.333
-100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:05<00:00, 414.35it/s]
-F-score: 0.41665, Precision: 0.59889, Recall: 0.31944
-Inference time: 384.33300
-Score: 73.99756
+  --inference_time 382.723
+100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:06<00:00, 387.58it/s]
+F-score: 0.41775, Precision: 0.60048, Recall: 0.32029
+Inference time: 382.72300
+Score: 74.17861 (⭐)
 
 # with dilate
 python eval_score.py ^
@@ -137,16 +221,34 @@ python eval_score.py ^
 F-score: 0.20217, Precision: 0.27758, Recall: 0.15898
 Inference time: 410.42000
 Score: 63.20104
+
+# with mb_rec_mix
+python eval_score.py ^
+  --gt_path ..\datasets\train_full_images.json ^
+  --result_json ..\results\res_v2_mix.json ^
+  --inference_time 312.732
+100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:05<00:00, 419.54it/s]
+F-score: 0.06820, Precision: 0.13251, Recall: 0.04591
+Inference time: 312.73200
+Score: 66.14570
+
+# with v2_rec
+python eval_score.py ^
+  --gt_path ..\datasets\train_full_images.json ^
+  --result_json ..\results\res_v2_recv2.json ^
+  --inference_time 719.539
+100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:05<00:00, 457.92it/s]
+F-score: 0.44099, Precision: 0.65593, Recall: 0.33215
+Inference time: 719.53900
+Score: 46.47884
 ```
 
-⚪ ppocr_mb
+⚪ mb_det + mb_rec
 
-ℹ 使用超参数 `DET_SEG_THRESH=0.5` 和 `DET_MIN_SIZE=5`  
 ⚠ 这条路线主打更快的速度  
 
 ```shell
-[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppoc
-r_mb_det_int8.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocr_mb_det_int8.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
 version: 1.4.0
 ppocr_mb_det Build at 2024-11-01 13:21:52 For platform cv180x
 Max SharedMem size:8179200
@@ -154,40 +256,39 @@ version: 1.4.0
 ppocr_mb_rec Build at 2024-11-01 12:56:51 For platform cv180x
 Max SharedMem size:1075360
 find shared memory(8179200),  saved:1075360
-ts_model_load: 680.000 ms
-ts_model_unload: 97.938 ms
+ts_model_load: 800.000 ms
+ts_model_unload: 91.092 ms
 ================================
 n_img:        2350
 n_crop:       8516
 --------------------------------
-ts_img_load:  490526.062 ms
-ts_img_crop:  56534.555 ms
-ts_det_pre:   229414.125 ms
-ts_det_infer: 534560.562 ms
-ts_det_post:  78513.445 ms
-ts_rec_pre:   13347.812 ms
-ts_rec_infer: 284500.500 ms
-ts_rec_post:  50491.832 ms
+ts_img_load:  441576.031 ms
+ts_img_crop:  48579.242 ms
+ts_det_pre:   191497.203 ms
+ts_det_infer: 525525.688 ms
+ts_det_post:  45419.188 ms
+ts_rec_pre:   12404.003 ms
+ts_rec_infer: 283600.375 ms
+ts_rec_post:  50385.211 ms
 --------------------------------
-ts_avg_pre:   103.303 ms
-ts_avg_infer: 348.537 ms
-ts_avg_post:  54.896 ms
+ts_avg_pre:   86.766 ms
+ts_avg_infer: 344.309 ms
+ts_avg_post:  40.768 ms
 ================================
-Total time:   1740312.875 ms
+Total time:   1601302.000 ms
 ```
 
 Judge score:
 
 ```shell
--> python eval_score.py ^
+python eval_score.py ^
   --gt_path ..\datasets\train_full_images.json ^
   --result_json ..\results\res_mb.json ^
-  --inference_time 348.537
-
-100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:04<00:00, 554.24it/s]
-F-score: 0.32444, Precision: 0.56995, Recall: 0.22676
-Inference time: 348.53700
-Score: 73.35208
+  --inference_time 344.309
+100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:04<00:00, 564.50it/s]
+F-score: 0.32475, Precision: 0.57048, Recall: 0.22698
+Inference time: 344.30900
+Score: 73.72358
 ```
 
 ----
