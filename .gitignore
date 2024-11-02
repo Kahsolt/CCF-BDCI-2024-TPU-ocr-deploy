@@ -18,7 +18,9 @@ tpu-sdk-cv180x-ocr/
 build/
 
 # raw predict
-results/*.txt
+results/*
+!results/*.json
+!results/*.md
 
 # logs
 log/
