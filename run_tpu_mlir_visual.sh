@@ -9,18 +9,21 @@ BASE_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 [ ! -d tpu-mlir ] && git clone -q https://github.com/milkv-duo/tpu-mlir
 source ./tpu-mlir/envsetup.sh
 
-pushd build/ppocr_mb_rec > /dev/null
+
+MODEL=ppocr_mb_rec
+
+pushd build/$MODEL > /dev/null
 
 #visual.py \
-#  --f32_mlir ppocrv4_det.mlir \
-#  --quant_mlir ppocrv4_det_cv180x_int8_sym_tpu.mlir \
+#  --f32_mlir $MODEL.mlir \
+#  --quant_mlir ${MODEL}_cv180x_int8_sym_tpu.mlir \
 #  --input $BASE_PATH/datasets/cali_set_det/gt_97.jpg \
 #  -p 10000 \
 #  --debug
 
 visual.py \
-  --f32_mlir ppocr_mb_rec.mlir \
-  --quant_mlir ppocr_mb_rec_cv180x_bf16_tpu.mlir \
+  --f32_mlir $MODEL.mlir \
+  --quant_mlir ${MODEL}_cv180x_bf16_tpu.mlir \
   --input $BASE_PATH/datasets/cali_set_rec/crop_177.jpg \
   -p 10000 \
   --debug

@@ -106,7 +106,7 @@ run_qtable.py $MLIR_MODEL_FILE \
   -o $QTABLE_FILE
 fi
 if [ "$DTYPE" == "mix" ] && [ -f $QTABLE_FILE ]; then
-  QUANTIZE_TABLE=--quantize_table $QTABLE_FILE
+  QUANTIZE_TABLE="--quantize_table $QTABLE_FILE"
   CVI_MODEL_FILE=${MODEL_NAME}_mix.cvimodel
   CVI_INFO_FILE=${MODEL_NAME}_mix.info
 else

@@ -1,0 +1,22 @@
+# op_name   quantize_mode
+conv2d_53.tmp_0_Conv INT8
+hardswish_0.tmp_0_HardSwish INT8
+relu_0.tmp_0_Relu INT8
+relu_1.tmp_0_Relu INT8
+p2o.GlobalAveragePool.1_GlobalAveragePool INT8
+conv2d_56.tmp_0_Conv INT8
+hardsigmoid_0.tmp_0_HardSigmoid INT8
+p2o.Mul.1_Mul INT8
+p2o.GlobalAveragePool.3_GlobalAveragePool INT8
+hardsigmoid_1.tmp_0_HardSigmoid INT8
+hardsigmoid_2.tmp_0_HardSigmoid INT8
+hardsigmoid_3.tmp_0_HardSigmoid INT8
+hardsigmoid_4.tmp_0_HardSigmoid INT8
+conv2d_80.tmp_0_Conv INT8
+p2o.GlobalAveragePool.11_GlobalAveragePool INT8
+hardsigmoid_5.tmp_0_HardSigmoid INT8
+p2o.GlobalAveragePool.13_GlobalAveragePool INT8
+hardsigmoid_6.tmp_0_HardSigmoid INT8
+conv2d_88.tmp_0_Conv INT8
+hardsigmoid_7.tmp_0_HardSigmoid INT8
+hardsigmoid_8.tmp_0_HardSigmoid INT8

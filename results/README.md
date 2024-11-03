@@ -18,11 +18,12 @@
 
 - det
   - v3: 244.60 ms/img
-  - v2: 228.71 ms/img
+  - v2: 228.71 ms/img (⭐)
   - mb: 223.63 ms/img
 - rec
   - v2: 105.21 ms/crop
-  - mb (bf16): 33.35 ms/crop
+  - mb (bf16): 33.35 ms/crop (⭐)
+  - mb (mix-fine): 33.17 ms/crop (精度很烂)
   - mb (mix): 18.07 ms/crop (精度很烂)
 
 ----
@@ -139,35 +140,41 @@ ts_avg_post:  113.425 ms
 ================================
 Total time:   2132573.750  ms
 
-# with rec_mix
-[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel  ../cvimodels/ppocr_mb_rec_mix.cvimodel /data/train_full_images_0
+# with rec_mix_fine
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel ../cvimodels/ppocr_mb_rec_mix_fine.cvimodel /data/train_full_images_0
 version: 1.4.0
-ppocrv2_det Build at 2024-11-01 13:47:17 For platform cv180x
+ppocrv2_det Build at 2024-11-03 17:18:35 For platform cv180x
 Max SharedMem size:8179200
 version: 1.4.0
-ppocr_mb_rec Build at 2024-11-01 14:33:01 For platform cv180x
-Max SharedMem size:537680
-find shared memory(8179200),  saved:537680
-ts_model_load: 632.000 ms
-ts_model_unload: 84.594 ms
+ppocr_mb_rec Build at 2024-11-03 18:35:08 For platform cv180x
+Max SharedMem size:1075360
+find shared memory(8179200),  saved:1075360 
+ts_model_load: 736.000 ms
+ts_model_unload: 108.799 ms
 ================================
 n_img:        2350
 n_crop:       10963
---------------------------------
-ts_img_load:  499276.281 ms
-ts_img_crop:  71127.094 ms
-ts_det_pre:   231542.922 ms
-ts_det_infer: 536826.250 ms
-ts_det_post:  85935.906 ms
-ts_rec_pre:   17556.877 ms
-ts_rec_infer: 198094.734 ms
-ts_rec_post:  64833.812 ms
---------------------------------
-ts_avg_pre:   106.000 ms
-ts_avg_infer: 312.732 ms
-ts_avg_post:  64.157 ms
+------------[Total]-------------
+ts_img_load:  449695.469 ms
+ts_img_crop:  63493.660 ms
+ts_det_pre:   206047.172 ms
+ts_det_infer: 527193.500 ms
+ts_det_post:  53778.926 ms
+ts_rec_pre:   16207.931 ms
+ts_rec_infer: 363686.875 ms
+ts_rec_post:  64920.508 ms
+-----------[Average]------------
+ts_det_pre:   87.680 ms
+ts_rec_pre:   1.478 ms
+ts_pre:       94.577 ms
+ts_det_infer: 224.338 ms
+ts_rec_infer: 33.174 ms
+ts_infer:     379.098 ms
+ts_det_post:  22.885 ms
+ts_rec_post:  5.922 ms
+ts_post:      50.510 ms
 ================================
-Total time:   1708340.375 ms
+Total time:   1747858.750 ms
 
 # with v2_rec
 [root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel  ../cvimodels/ppocrv2_rec_bf16.cvimodel /data/train_full_images_0
@@ -222,15 +229,15 @@ F-score: 0.20217, Precision: 0.27758, Recall: 0.15898
 Inference time: 410.42000
 Score: 63.20104
 
-# with mb_rec_mix
+# with mb_rec_mix_fine
 python eval_score.py ^
   --gt_path ..\datasets\train_full_images.json ^
-  --result_json ..\results\res_v2_mix.json ^
-  --inference_time 312.732
-100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:05<00:00, 419.54it/s]
-F-score: 0.06820, Precision: 0.13251, Recall: 0.04591
-Inference time: 312.73200
-Score: 66.14570
+  --result_json ..\results\res_v2_mix_fine.json ^
+  --inference_time 379.098
+100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:05<00:00, 442.32it/s]
+F-score: 0.35770, Precision: 0.57243, Recall: 0.26013
+Inference time: 379.09800
+Score: 72.08486
 
 # with v2_rec
 python eval_score.py ^

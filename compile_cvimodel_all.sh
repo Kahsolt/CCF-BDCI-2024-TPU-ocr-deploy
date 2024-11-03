@@ -30,7 +30,8 @@ bash ./compile_cvimodel.sh rec mb bf16
 bash ./compile_cvimodel.sh cls mb int8
 
 # could be better?
-bash ./compile_cvimodel.sh rec mb mix
+#bash ./compile_cvimodel.sh rec mb mix    # This do not work properly :(
+bash ./compile_cvimodel_rec_mb_mix_fine.sh
 
 # prec-chk not pass, explosive numerical in network :(
 #bash ./compile_cvimodel.sh det_prune mb mix
