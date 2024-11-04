@@ -110,6 +110,42 @@ ts_avg_post:  59.941 ms
 ================================
 Total time:   1837247.125 ms
 
+# with DET_SEG_THRESH=0.6
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel  ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
+version: 1.4.0
+ppocrv2_det Build at 2024-11-03 17:18:35 For platform cv180x
+Max SharedMem size:8179200
+version: 1.4.0
+ppocr_mb_rec Build at 2024-11-01 12:56:51 For platform cv180x
+Max SharedMem size:1075360
+find shared memory(8179200),  saved:1075360 
+ts_model_load: 625.641 ms
+ts_model_unload: 99.197 ms
+================================
+n_img:        2350
+n_crop:       10232
+------------[Total]-------------
+ts_img_load:  433020.969 ms
+ts_img_crop:  55789.320 ms
+ts_det_pre:   181388.703 ms
+ts_det_infer: 523809.938 ms
+ts_det_post:  43271.453 ms
+ts_rec_pre:   14800.529 ms
+ts_rec_infer: 340858.406 ms
+ts_rec_post:  60596.555 ms
+-----------[Average]------------
+ts_det_pre:   77.187 ms
+ts_rec_pre:   1.446 ms
+ts_pre:       83.485 ms
+ts_det_infer: 222.898 ms
+ts_rec_infer: 33.313 ms
+ts_infer:     367.944 ms
+ts_det_post:  18.413 ms
+ts_rec_post:  5.922 ms
+ts_post:      44.199 ms
+================================
+Total time:   1655957.500 ms
+
 # with dilate
 [root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel  ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
 version: 1.4.0
@@ -217,7 +253,17 @@ python eval_score.py ^
 100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:06<00:00, 387.58it/s]
 F-score: 0.41775, Precision: 0.60048, Recall: 0.32029
 Inference time: 382.72300
-Score: 74.17861 (⭐)
+Score: 74.17861
+
+# with DET_SEG_THRESH=0.6
+python ..\judge-code\eval_score.py ^
+  --gt_path ..\datasets\train_full_images.json ^
+  --result_json ..\results\results.json ^
+  --inference_time 367.944
+100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:05<00:00, 428.34it/s]
+F-score: 0.42781, Precision: 0.63849, Recall: 0.32166
+Inference time: 367.94400
+Score: 75.83703 (⭐)
 
 # with dilate
 python eval_score.py ^

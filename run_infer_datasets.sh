@@ -55,14 +55,10 @@ nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimod
 nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel ../cvimodels/ppocr_mb_rec_mix_fine.cvimodel /data/train_full_images_0
 
 # run on host (Windows)
-pushd tpu-sdk-cv180x-ocr\samples\ppocr_sys_many
-scp root@192.168.42.1:/root/tpu-sdk-cv180x-ocr/samples/results.txt .
-python convert_results.py .\results.txt
-MOVE .\res* ..\..\..\results
-popd
-
-pushd judge-code
-python eval_score.py ^
+pushd results
+scp root@192.168.42.1:/root/tpu-sdk-cv180x-ocr/samples/results.txt .\results.txt
+python ..\tpu-sdk-cv180x-ocr\samples\ppocr_sys_many\convert_results.py -F .\results.txt
+python ..\judge-code\eval_score.py ^
   --gt_path ..\datasets\train_full_images.json ^
   --result_json ..\results\results.json ^
   --inference_time 1000
