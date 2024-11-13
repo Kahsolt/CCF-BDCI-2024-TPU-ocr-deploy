@@ -18,7 +18,7 @@ def calculate_iou(poly1, poly2):
     if polygon1.intersects(polygon2):
         inter_area = polygon1.intersection(polygon2).area
     else:
-        inter_area = 0
+        return 0.0
     union_area = polygon1.area + polygon2.area - inter_area
     if union_area == 0:
         return 0.0
@@ -29,6 +29,8 @@ def calculate_f_score(gt_data: dict, result_data: dict, iou_threshold: float = 0
     gt_count = 0
     result_count = 0
     true_positive = 0
+    perfect_rec_count = 0
+    good_box_list = []  # 有得分的box
 
     for image_name, gt_list in tqdm(gt_data.items()):
         result_list = result_data.get(image_name, [])
@@ -48,10 +50,36 @@ def calculate_f_score(gt_data: dict, result_data: dict, iou_threshold: float = 0
                 sim = string_similar(gt['transcription'], result['transcription'])
                 if sim <= sim_threshold: continue 
 
+                if abs(sim - 1) < 1e-8: perfect_rec_count += 1
+                good_box_list.append(result['points'])
+
                 gt_matched.add(gt_idx)
                 result_matched.add(result_idx)
                 true_positive += 1
                 break
+
+    def get_aspect_ratio(rect:Polygon):
+        from shapely import get_point, distance
+        p0 = get_point(rect.exterior, 0)
+        p1 = get_point(rect.exterior, 1)
+        p2 = get_point(rect.exterior, 2)
+        d0 = distance(p0, p1)
+        d1 = distance(p1, p2)
+        aspect = min(d0, d1) / max(d0, d1)
+        return aspect
+
+    if not 'plot':  # 根据面积/长宽比都无法区分出更容易得分或出错的框，难以在此处优化 :(
+        all_box_list = [b['points'] for it in result_data.values() for b in it]
+        bad_box_list = [b for b in all_box_list if b not in good_box_list]
+        good_box_area_list = [get_aspect_ratio(Polygon(b)) for b in good_box_list]
+        bad_box_area_list  = [get_aspect_ratio(Polygon(b)) for b in bad_box_list]
+        import matplotlib.pyplot as plt
+        plt.scatter(good_box_area_list, [0] * len(good_box_area_list), c='b')
+        plt.scatter(bad_box_area_list,  [0] * len(bad_box_area_list),  c='r')
+        plt.show()
+
+    # v2_det + mb_rec: 3518 / 9513 = 36.980973404814466
+    print(f'>> Perfect recognize {perfect_rec_count} / {result_count} = {perfect_rec_count / result_count:%}')
 
     precision = true_positive / result_count if result_count > 0 else 0
     recall = true_positive / gt_count if gt_count > 0 else 0
