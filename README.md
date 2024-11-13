@@ -12,16 +12,23 @@ Team Name: 识唔识得
 
 ### 性能评估 & 对比
 
-ℹ 单元格内数值为 `f-score/precsion/recall : infer_time`
+ℹ 单元格内数值为 `f-score/precsion/recall : valid_infer_time/contest_infer_time : real_fps`
 
-| det | rec | CPU + onnx (fp32) | TPU + cvimodel (int8 + bf16) | score | comment |
-| :-: | :-: | :-: | :-: | :-: | :-: |
-| v4 | v4 | 0.60724/0.78855/0.49372 : 76.05 | | | not run on chip |
-| v3 | v3 | 0.57585/0.80885/0.44707 : 58.68 | | | not run on chip |
-| v2 | v2 | 0.52051/0.78323/0.38977 : 43.02 | 0.44099/0.65593/0.33215 : 719.539 | 46.47884 | too slow |
-| v3 | mb | 0.54064/0.79092/0.41069 : 58.13 | 0.42010/0.54821/0.34052 : 433.201 | 69.98178 | slow |
-| v2 | mb | 0.49098/0.78041/0.35815 : 41.59 | 0.42781/0.63849/0.32166 : 367.944 | 75.83703 (⭐) | the most balanced solution |
-| mb | mb | 0.34883/0.69257/0.23312 : 41.61 | 0.32475/0.57048/0.22698 : 344.309 | 73.72358 | too wrong |
+| det | rec | CPU + onnx (fp32) | TPU + cvimodel (int8 + bf16) | valid score | contest score | comment |
+| :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| v4 | v4 | 0.60724/0.78855/0.49372 : 76.05 | | | | not run on chip |
+| v3 | v3 | 0.57585/0.80885/0.44707 : 58.68 | | | | not run on chip |
+| v2 | v2 | 0.52051/0.78323/0.38977 : 43.02 | 0.44099/0.65593/0.33215 : 719.539/333.937 : 0.88 | 46.47884 | 79.25498 | too slow |
+| v3 | mb | 0.54064/0.79092/0.41069 : 58.13 | 0.42010/0.54821/0.34052 : 433.201/277.942 : 1.22 | 69.98178 | 83.17896 | slow |
+| v2 | mb | 0.49098/0.78041/0.35815 : 41.59 | 0.42781/0.63849/0.32166 : 367.944/256.211 : 1.42 | 75.83703 | 85.33433 (⭐) | the most balanced solution |
+| mb | mb | 0.34883/0.69257/0.23312 : 41.61 | 0.32475/0.57048/0.22698 : 344.309/256.930 : 1.47 | 73.72358 | 81.15095 | too wrong |
+
+```
+注: 
+- valid score 计算中: infer_time = ts_det_infer + ts_rec_infer * (n_crop / n_img), 似乎应用上更合理
+- contest score 计算中: infer_time = ts_det_infer + ts_rec_infer, 应比赛要求
+- real_fps = n_img / (ts_total - (ts_model_load + ts_model_unload)) * 1000
+```
 
 
 ### 环境搭建

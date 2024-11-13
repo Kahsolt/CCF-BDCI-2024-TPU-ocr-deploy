@@ -263,7 +263,17 @@ python ..\judge-code\eval_score.py ^
 100%|████████████████████████████████████████████████████████████████| 2350/2350 [00:05<00:00, 428.34it/s]
 F-score: 0.42781, Precision: 0.63849, Recall: 0.32166
 Inference time: 367.94400
-Score: 75.83703 (⭐)
+Score: 75.83703
+
+# with DET_SEG_THRESH=0.6 (contest score)
+python ..\judge-code\eval_score.py ^
+  --gt_path ..\datasets\train_full_images.json ^
+  --result_json ..\results\res_v2_det_thresh=0.6.json ^
+  --inference_time 256.211
+>> Perfect recognize 3518 / 9513 = 36.980973%
+F-score: 0.42781, Precision: 0.63849, Recall: 0.32166
+Inference time: 256.21100
+Score: 85.33433 (⭐)
 
 # with dilate
 python eval_score.py ^

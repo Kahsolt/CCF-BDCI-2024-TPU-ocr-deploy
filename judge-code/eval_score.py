@@ -5,6 +5,10 @@ from argparse import ArgumentParser
 from tqdm import tqdm
 from shapely.geometry import Polygon
 
+get_valid_score   = lambda f_score, ts_det_infer, ts_rec_infer, n_crop, n_img: 90 + 40 * f_score - 0.085 * (ts_det_infer + ts_rec_infer * (n_crop / n_img))
+get_contest_score = lambda f_score, ts_det_infer, ts_rec_infer:                90 + 40 * f_score - 0.085 * (ts_det_infer + ts_rec_infer)
+get_real_fps      = lambda ts_total, ts_model_load, ts_model_unload, n_img: n_img / (ts_total - (ts_model_load + ts_model_unload)) * 1000
+
 
 def string_similar(s1, s2):
     return SequenceMatcher(None, s1, s2).quick_ratio()

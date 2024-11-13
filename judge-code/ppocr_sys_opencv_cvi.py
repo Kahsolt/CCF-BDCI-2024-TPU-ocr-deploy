@@ -251,7 +251,7 @@ def main(opt):
     logging.info("inference_time(ms): {:.2f}".format(inference_time * 1000))
     logging.info("postprocess_time(ms): {:.2f}".format(postprocess_time * 1000))
     logging.info("------------------ Total Time Info ----------------------")
-    logging.info("total_inference_time(ms): {:.2f}".format(total_inference_time * 1000))
+    logging.info("total_inference_time(ms): {:.2f}".format(total_inference_time * 1000))    # wtf, 等于 一次 det + 一次 rec 的时间！！
     logging.info("total_run_time(ms): {:.2f}".format((ts_run_total) * 1000))
     logging.info("per_img_run_time(ms): {:.2f}".format((ts_run_per_img) * 1000))
 
