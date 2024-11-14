@@ -1,0 +1,4 @@
+# infer results
+results/
+res*.json
+res*.txt
