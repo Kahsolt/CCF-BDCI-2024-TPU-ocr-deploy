@@ -146,6 +146,64 @@ ts_post:      44.199 ms
 ================================
 Total time:   1655957.500 ms
 
+# with DET_SEG_THRESH=0.6 (input_size=480)
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many_480 ../cvimodels/ppocrv2_det_int8_480.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
+ts_model_load: 646.000 ms
+ts_model_unload: 110.351 ms
+================================
+n_img:        2350
+n_crop:       7693
+------------[Total]-------------
+ts_img_load:  441338.875 ms
+ts_img_crop:  31840.477 ms
+ts_det_pre:   142039.766 ms
+ts_det_infer: 286345.406 ms
+ts_det_post:  29885.529 ms
+ts_rec_pre:   10698.371 ms
+ts_rec_infer: 257174.625 ms
+ts_rec_post:  45597.750 ms
+-----------[Average]------------
+ts_det_pre:   60.442 ms
+ts_rec_pre:   1.391 ms
+ts_pre:       64.995 ms
+ts_det_infer: 121.849 ms
+ts_rec_infer: 33.430 ms
+ts_infer:     231.285 ms
+ts_det_post:  12.717 ms
+ts_rec_post:  5.927 ms
+ts_post:      32.121 ms
+================================
+Total time:   1246885.750 ms
+
+# with DET_SEG_THRESH=0.6 (input_size=320)
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many_320 ../cvimodels/ppocrv2_det_int8_320.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
+ts_model_load: 532.000 ms
+ts_model_unload: 108.762 ms
+================================
+n_img:        2350
+n_crop:       4639
+------------[Total]-------------
+ts_img_load:  421119.094 ms
+ts_img_crop:  12319.597 ms
+ts_det_pre:   60890.621 ms
+ts_det_infer: 100069.352 ms
+ts_det_post:  12054.046 ms
+ts_rec_pre:   5543.258 ms
+ts_rec_infer: 154795.125 ms
+ts_rec_post:  27532.229 ms
+-----------[Average]------------
+ts_det_pre:   25.911 ms
+ts_rec_pre:   1.195 ms
+ts_pre:       28.270 ms
+ts_det_infer: 42.583 ms
+ts_rec_infer: 33.368 ms
+ts_infer:     108.453 ms
+ts_det_post:  5.129 ms
+ts_rec_post:  5.935 ms
+ts_post:      16.845 ms
+================================
+Total time:   796164.125 ms
+
 # with dilate
 [root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel  ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
 version: 1.4.0
@@ -273,7 +331,27 @@ python ..\judge-code\eval_score.py ^
 >> Perfect recognize 3518 / 9513 = 36.980973%
 F-score: 0.42781, Precision: 0.63849, Recall: 0.32166
 Inference time: 256.21100
-Score: 85.33433 (⭐)
+Score: 85.33433
+
+# with DET_SEG_THRESH=0.6 input_size=480 (contest score)
+python ..\judge-code\eval_score.py ^
+  --gt_path ..\datasets\train_full_images.json ^
+  --result_json ..\results\res_v2_det_thresh=0.6_size=480.json ^
+  --inference_time 155.279
+>> Perfect recognize 2432 / 7128 = 34.118967%
+F-score: 0.33901, Precision: 0.61855, Recall: 0.23349
+Inference time: 155.27900
+Score: 90.36170
+
+# with DET_SEG_THRESH=0.6 input_size=320 (contest score)
+python ..\judge-code\eval_score.py ^
+  --gt_path ..\datasets\train_full_images.json ^
+  --result_json ..\results\res_v2_det_thresh=0.6_size=320.json ^
+  --inference_time 75.951
+>> Perfect recognize 1238 / 4219 = 29.343446%
+F-score: 0.20613, Precision: 0.56435, Recall: 0.12609
+Inference time: 75.95100
+Score: 91.78934 (⭐)
 
 # with dilate
 python eval_score.py ^

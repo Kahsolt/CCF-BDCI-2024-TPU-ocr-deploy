@@ -47,12 +47,14 @@ cd tpu-sdk-cv180x-ocr
 source ./envs_tpu_sdk.sh
 cd samples
 
-nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv3_det_int8.cvimodel  ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
-nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel  ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
-nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocr_mb_det_int8.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/train_full_images_0
-
-nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel ../cvimodels/ppocrv2_rec_bf16.cvimodel      /data/train_full_images_0
-nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel ../cvimodels/ppocr_mb_rec_mix_fine.cvimodel /data/train_full_images_0
+# rank-A
+nice -n -19 ./bin/cvi_sample_ppocr_sys_many     ../cvimodels/ppocrv3_det_int8.cvimodel     ../cvimodels/ppocr_mb_rec_bf16.cvimodel     /data/train_full_images_0
+nice -n -19 ./bin/cvi_sample_ppocr_sys_many     ../cvimodels/ppocrv2_det_int8.cvimodel     ../cvimodels/ppocr_mb_rec_bf16.cvimodel     /data/train_full_images_0
+nice -n -19 ./bin/cvi_sample_ppocr_sys_many     ../cvimodels/ppocr_mb_det_int8.cvimodel    ../cvimodels/ppocr_mb_rec_bf16.cvimodel     /data/train_full_images_0
+nice -n -19 ./bin/cvi_sample_ppocr_sys_many     ../cvimodels/ppocrv2_det_int8.cvimodel     ../cvimodels/ppocrv2_rec_bf16.cvimodel      /data/train_full_images_0
+nice -n -19 ./bin/cvi_sample_ppocr_sys_many     ../cvimodels/ppocrv2_det_int8.cvimodel     ../cvimodels/ppocr_mb_rec_mix_fine.cvimodel /data/train_full_images_0
+nice -n -19 ./bin/cvi_sample_ppocr_sys_many_480 ../cvimodels/ppocrv2_det_int8_480.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel     /data/train_full_images_0
+nice -n -19 ./bin/cvi_sample_ppocr_sys_many_320 ../cvimodels/ppocrv2_det_int8_320.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel     /data/train_full_images_0
 
 # run on host (Windows)
 pushd results
