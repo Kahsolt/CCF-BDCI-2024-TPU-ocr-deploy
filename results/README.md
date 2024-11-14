@@ -1,4 +1,4 @@
-### 板上运行+评测结果
+### 板上运行+评测结果 (A榜)
 
 ℹ 如无特殊说明，以下实验均使用超参数 `DET_SEG_THRESH=0.5` 和 `DET_MIN_SIZE=5`  
 
@@ -430,6 +430,101 @@ python eval_score.py ^
 F-score: 0.32475, Precision: 0.57048, Recall: 0.22698
 Inference time: 344.30900
 Score: 73.72358
+```
+
+----
+
+### 板上运行+评测结果 (B榜)
+
+ℹ 如无特殊说明，以下实验均使用模型组合 `v2_det + mb_rec`，使用超参数 `DET_SEG_THRESH=0.6` 和 `DET_MIN_SIZE=5`  
+
+```shell
+# 640
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/MSRA_Photo
+ts_model_load: 750.000 ms
+ts_model_unload: 103.912 ms
+================================
+n_img:        500
+n_crop:       1400
+------------[Total]-------------
+ts_img_load:  396959.656 ms
+ts_img_crop:  33485.441 ms
+ts_det_pre:   487813.562 ms
+ts_det_infer: 140049.891 ms
+ts_det_post:  77197.562 ms
+ts_rec_pre:   3328.570 ms
+ts_rec_infer: 47416.445 ms
+ts_rec_post:  8345.640 ms
+-----------[Average]------------
+ts_det_pre:   975.627 ms
+ts_rec_pre:   2.378 ms
+ts_pre:       982.284 ms
+ts_det_infer: 280.100 ms
+ts_rec_infer: 33.869 ms
+ts_infer:     374.933 ms
+ts_det_post:  154.395 ms
+ts_rec_post:  5.961 ms
+ts_post:      171.086 ms
+================================
+Total time:   1197762.250 ms
+
+# 480
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many_480 ../cvimodels/ppocrv2_det_int8_480.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/MSRA_Photo
+ts_model_load: 598.000 ms
+ts_model_unload: 103.279 ms
+================================
+n_img:        500
+n_crop:       1305
+------------[Total]-------------
+ts_img_load:  348136.281 ms
+ts_img_crop:  23943.961 ms
+ts_det_pre:   385107.938 ms
+ts_det_infer: 82212.438 ms
+ts_det_post:  60452.098 ms
+ts_rec_pre:   2274.348 ms
+ts_rec_infer: 44093.824 ms
+ts_rec_post:  7791.156 ms
+-----------[Average]------------
+ts_det_pre:   770.216 ms
+ts_rec_pre:   1.743 ms
+ts_pre:       774.765 ms
+ts_det_infer: 164.425 ms
+ts_rec_infer: 33.788 ms
+ts_infer:     252.613 ms
+ts_det_post:  120.904 ms
+ts_rec_post:  5.970 ms
+ts_post:      136.486 ms
+================================
+Total time:   956828.625 ms
+
+# 320
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many_320 ../cvimodels/ppocrv2_det_int8_320.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/MSRA_Photo
+ts_model_load: 490.000 ms
+ts_model_unload: 99.970 ms
+================================
+n_img:        500
+n_crop:       1018
+------------[Total]-------------
+ts_img_load:  333177.594 ms
+ts_img_crop:  16489.357 ms
+ts_det_pre:   368210.156 ms
+ts_det_infer: 40247.668 ms
+ts_det_post:  51722.090 ms
+ts_rec_pre:   1479.324 ms
+ts_rec_infer: 35160.059 ms
+ts_rec_post:  6052.247 ms
+-----------[Average]------------
+ts_det_pre:   736.420 ms
+ts_rec_pre:   1.453 ms
+ts_pre:       739.379 ms
+ts_det_infer: 80.495 ms
+ts_rec_infer: 34.538 ms
+ts_infer:     150.815 ms
+ts_det_post:  103.444 ms
+ts_rec_post:  5.945 ms
+ts_post:      115.549 ms
+================================
+Total time:   854695.688 ms
 ```
 
 ----

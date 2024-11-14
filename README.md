@@ -12,6 +12,8 @@ Team Name: 识唔识得
 
 ### 性能评估 & 对比
 
+⚪ A榜 (ICDAR2019-LVST, `n_sample=2350`)
+
 ℹ 单元格内数值为 `f-score/precsion/recall : valid_infer_time/contest_infer_time : real_fps`
 
 | det | rec | CPU + onnx (fp32) | TPU + cvimodel (int8 + bf16) | valid score | contest score | comment |
@@ -37,6 +39,14 @@ Team Name: 识唔识得
 | 640 | 0.42781 | 256.211 | 1.42  | 85.33433 | v2-mb baseline |
 | 480 | 0.33901 | 155.279 | 1.885 | 90.36170 | 综合考虑最优 ⭐ |
 | 320 | 0.20613 |  75.951 | 2.954 | 91.78934 | 很快，但质量下降很厉害 |
+
+⚪ B榜 (MSRA-TD500, `n_sample=500`)
+
+| input size | infer_time | real_fps | comment |
+| :-: | :-: | :-: | :-: |
+| 640 | 313.969 | 0.42 | 原图较大，ts_det_infer 比 A 榜多 |
+| 480 | 198.213 | 0.52 | 相比 640 质量下降不大 (⭐) |
+| 320 | 115.033 | 0.58 | 相比 480 有文本框粘连/更多的漏检；原图较大，load_img 严重拉低了 real_fps |
 
 
 ### 环境搭建
@@ -71,6 +81,9 @@ Team Name: 识唔识得
   - 板上TF卡分区扩容，参考，记得分区不能太大！（1.5G 安全）
 - https://github.com/ZhangGe6/onnx-modifier
 - https://github.com/zcswdt/OCR_ICDAR_label_revise
+- https://github.com/xinke-wang/OCRDatasets
+  - MSRA-TD500 dataset: http://pages.ucsd.edu/%7Eztu/publication/MSRA-TD500.zip
+  - MSRA-TD500 essay: https://pages.ucsd.edu/~ztu/publication/cvpr12_textdetection.pdf
 
 ----
 by Armit
