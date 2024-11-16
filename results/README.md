@@ -528,5 +528,71 @@ Total time:   854695.688 ms
 ```
 
 ----
+
+### 板上运行+评测结果 (B2榜)
+
+ℹ 如无特殊说明，以下实验均使用模型组合 `v2_det + mb_rec`，使用超参数 `DET_SEG_THRESH=0.6` 和 `DET_MIN_SIZE=5`  
+
+```shell
+# 640
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/test_images_640x640
+ts_model_load: 829.000 ms
+ts_model_unload: 108.380 ms
+================================
+n_img:        3992
+n_crop:       11920
+------------[Total]-------------
+ts_img_load:  384295.531 ms
+ts_img_crop:  94681.820 ms
+ts_det_pre:   20239.100 ms
+ts_det_infer: 885796.500 ms
+ts_det_post:  93333.594 ms
+ts_rec_pre:   19606.209 ms
+ts_rec_infer: 398918.812 ms
+ts_rec_post:  77933.859 ms
+-----------[Average]------------
+ts_det_pre:   5.070 ms
+ts_rec_pre:   1.645 ms
+ts_pre:       9.981 ms
+ts_det_infer: 221.893 ms
+ts_rec_infer: 33.466 ms
+ts_infer:     321.822 ms
+ts_det_post:  23.380 ms
+ts_rec_post:  6.538 ms
+ts_post:      42.903 ms
+================================
+Total time:   1977897.125 ms
+
+# 320
+[root@milkv-duo]~/tpu-sdk-cv180x-ocr/samples# nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8_480.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/test_images_640x640
+ts_model_load: 558.000 ms
+ts_model_unload: 103.488 ms
+================================
+n_img:        3992
+n_crop:       9728
+------------[Total]-------------
+ts_img_load:  350764.406 ms
+ts_img_crop:  47281.555 ms
+ts_det_pre:   166851.359 ms
+ts_det_infer: 477453.281 ms
+ts_det_post:  32734.170 ms
+ts_rec_pre:   13287.000 ms
+ts_rec_infer: 324345.875 ms
+ts_rec_post:  63507.746 ms
+-----------[Average]------------
+ts_det_pre:   41.796 ms
+ts_rec_pre:   1.366 ms
+ts_pre:       45.125 ms
+ts_det_infer: 119.603 ms
+ts_rec_infer: 33.341 ms
+ts_infer:     200.851 ms
+ts_det_post:  8.200 ms
+ts_rec_post:  6.528 ms
+ts_post:      24.109 ms
+================================
+Total time:   1478957.375 ms
+```
+
+----
 by Armit
 2024/11/01

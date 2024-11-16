@@ -3,6 +3,8 @@
 # Create Time: 周四 2024/11/14 
 
 # 推理结果可视化 (B榜无标注数据)
+# - B榜:  ./dataset/MSRA_Photo
+# - B2榜: ./dataset/test_images
 
 from vis_results import *
 
@@ -36,7 +38,7 @@ def run(args):
 
 if __name__ == '__main__':
   parser = ArgumentParser()
-  parser.add_argument('-I', '--input', default='./datasets/MSRA_Photo',  help='input image directory path')
+  parser.add_argument('-I', '--input', default='./datasets/test_images', help='input image directory path')
   parser.add_argument('-B', '--pred',  default='./results/results.json', help='pred annots')
   args = parser.parse_args()
 

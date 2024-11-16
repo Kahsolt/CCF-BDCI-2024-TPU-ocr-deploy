@@ -12,7 +12,7 @@ n           # new partition
 <Enter>     # partition type (default: primary)
 <Enter>     # partition number (default: 3)
 <Enter>     # First sector (use default)
-+1G         # Last sector
++1.5G       # Last sector
 w           # save and exit
 
 # should see mmcblk0p3
@@ -71,3 +71,28 @@ python ..\judge-code\eval_score.py ^
   --result_json ..\results\results.json ^
   --inference_time 1000
 popd
+
+
+#=====================================================================
+# Step 3.5 跑 B2 榜数据需要一些额外的处理！！
+
+# run on host (Windows)
+python run_utils_B2.py --resize -I .\datasets\test_images -R .\datasets\test_images_640x640
+scp -r .\datasets\test_images_640x640 root@192.168.42.1:/data
+
+# run on chip
+nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8.cvimodel     ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/test_images_640x640
+nice -n -19 ./bin/cvi_sample_ppocr_sys_many ../cvimodels/ppocrv2_det_int8_480.cvimodel ../cvimodels/ppocr_mb_rec_bf16.cvimodel /data/test_images_640x640
+
+# run on host (Windows)
+pushd results
+scp root@192.168.42.1:/root/tpu-sdk-cv180x-ocr/samples/results.txt .\resB2.txt
+python ..\tpu-sdk-cv180x-ocr\samples\ppocr_sys_many\convert_results.py -F .\resB2.txt
+python run_utils_B2.py --fixres -r .\results\resB2.json
+ls .\results\resB2_fix.json
+popd
+
+# 基于降采样图
+python vis_results_B.py -I .\datasets\test_images_640x640 -B .\results\resB2.json
+# 基于原图
+python vis_results_B.py -I .\datasets\test_images         -B .\results\resB2_fix.json

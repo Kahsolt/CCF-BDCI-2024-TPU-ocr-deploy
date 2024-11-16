@@ -2,3 +2,4 @@
 # we need this to run 'models\download.cmd'
 
 paddleocr_convert
+imagesize
