@@ -17,6 +17,7 @@ tpu-sdk-cv180x-ocr/
 # cvimodel build
 build/*
 !build/*_qtable
+!build/*.mlir
 
 # raw predict
 results/*
