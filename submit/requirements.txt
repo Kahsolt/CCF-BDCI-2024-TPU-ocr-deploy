@@ -1,3 +1,6 @@
-opencv-python
+# install on host system, NOT on SoC!!
+
+pillow<=10.0.0
+imagesize
 numpy
 tqdm

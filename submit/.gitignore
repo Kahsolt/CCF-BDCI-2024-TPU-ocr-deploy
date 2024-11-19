@@ -1,4 +1,7 @@
 # infer results
-results/
-res*.json
-res*.txt
+output/*
+!output/.keep
+
+# downsampled dataset
+user_data/files/test_images_640x640
+user_data/files/test_images_*
