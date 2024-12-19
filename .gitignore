@@ -27,3 +27,8 @@ results/*
 # logs
 log/
 *.log
+
+# ref
+ref/
+doc/*
+!doc/*.pdf

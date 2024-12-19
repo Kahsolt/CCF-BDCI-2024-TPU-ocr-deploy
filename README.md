@@ -6,6 +6,7 @@
 
 Contest page: https://www.datafountain.cn/competitions/1044  
 Team Name: 识唔识得  
+Award: 二等奖 (第二名，不得要领...)
 
 
 ℹ 本仓库部署 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 项目到 [MilkV-Duo](https://milkv.io/zh/duo) 板上运行
